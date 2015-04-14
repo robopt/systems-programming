@@ -1,0 +1,13 @@
+*.swp
+*.s
+*.a
+*.o
+*.b
+*.nl
+*.nlf
+*.lst
+*.dis
+*.image
+*.bak
+baseline/BuildImage
+baseline/Offsets
