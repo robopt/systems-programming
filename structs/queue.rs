@@ -48,7 +48,7 @@ unsafe impl<'a, T: 'a> ContainerImpl<'a, T> for Queue<'a, T> {
 	#[inline(always)]
 	unsafe fn impl_construct(data: &mut [T], len: usize) -> Queue<T> {
 		let full = len == data.len();
-		Queue { data: data, first: 0, next: len, full: full }
+		Queue { data: data, first: 0, next: if full { 0 } else { len }, full: full }
 	}
 
 	#[inline(always)]
