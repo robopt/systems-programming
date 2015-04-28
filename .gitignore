@@ -3,6 +3,7 @@
 *.a
 *.o
 *.b
+*.rlib
 *.nl
 *.nlf
 *.lst
@@ -11,3 +12,4 @@
 *.bak
 baseline/BuildImage
 baseline/Offsets
+doc
