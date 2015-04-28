@@ -1,12 +1,10 @@
-use core::cmp::{Ord, Ordering};
+use core::cmp::{Ord, Ordering, min};
 use core::iter::Iterator;
 use core::mem::{replace, transmute};
 use core::ops::FnMut;
 use core::option::Option;
-use core::ptr::{copy_nonoverlapping, write};
-use core::slice::{from_raw_parts, from_raw_parts_mut, SliceExt};
 use super::generic::dev::*;
-use super::common::*;
+use super::slice::*;
 
 // NOTE: can't think of a better way to do this to get the macro
 #[path = "generic/dev.rs"] #[macro_use]
@@ -72,10 +70,7 @@ impl<'a, T: 'a> Iterator for PrioQueueIter<'a, T> {
 		} else {
 			unsafe {
 				let ret = Option::Some(self.0.get_unchecked(0));
-				self.0 = from_raw_parts(
-					self.0.get_unchecked(1) as *const T,
-					self.0.len() - 1
-				);
+				self.0 = self.0.offset_unchecked(1);
 				ret
 			}
 		}
@@ -83,64 +78,100 @@ impl<'a, T: 'a> Iterator for PrioQueueIter<'a, T> {
 }
 
 unsafe impl<'a, T: 'a + Priority> ContainerImpl<'a, T> for PrioQueue<'a, T> {
-	#[inline(always)]
+	#[inline]
 	unsafe fn impl_construct(data: &mut [T], len: usize) -> PrioQueue<T> {
 		let mut q = PrioQueue { data: data, len: len };
 		q.heapify();
 		q
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn impl_len(&self) -> usize {
 		self.len
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn impl_capacity(&self) -> usize {
 		self.data.len()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn impl_is_empty(&self) -> bool {
 		self.len == 0
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn impl_is_full(&self) -> bool {
 		self.len == self.data.len()
 	}
 
-	#[inline(always)]
+	#[inline]
 	unsafe fn impl_add(&mut self, value: T) {
-		write(self.data.get_unchecked_mut(self.len), value);
 		let oldlen = self.len;
+		self.data.write_unchecked(oldlen, value);
 		self.len += 1;
 		self.sift_up(oldlen);
 	}
 
-	#[inline(always)]
+	#[inline]
+	fn impl_extend(&mut self, values: &mut [T]) -> usize {
+		// TODO: more efficient algorithm
+		let len = min(self.data.len() - self.len, values.len());
+		unsafe {
+			self.data.copy_unchecked(self.len, values.trunc_unchecked(len))
+		}
+		let oldlen = self.len;
+		self.len += len;
+		for i in (oldlen..self.len) {
+			self.sift_up(i);
+		}
+		len
+	}
+
+	#[inline]
 	unsafe fn impl_remove(&mut self) -> &mut T {
-		self.len -= 1;
 		let len = self.len;
-		swap_unchecked(self.data, 0, len);
+		self.len -= 1;
+		self.data.swap_unchecked(0, len);
 		self.sift_down(0, len);
 		self.data.get_unchecked_mut(self.len)
 	}
 
-	#[inline(always)]
+	#[inline]
+	unsafe fn impl_forget<F>(&mut self, n: usize, mut f: F) -> usize where F: FnMut(&mut T) {
+		if n >= self.len {
+			for i in (0..self.len) {
+				f(self.data.get_unchecked_mut(i));
+			}
+			self.len
+		} else {
+			// TODO: more efficient algorithm
+			let oldlen = self.len;
+			self.len -= n;
+			let newlen = self.len;
+			for i in (newlen..oldlen) {
+				self.data.swap_unchecked(0, i);
+				self.sift_down(0, newlen);
+				f(self.data.get_unchecked_mut(i))
+			}
+			n
+		}
+	}
+
+	#[inline]
 	unsafe fn impl_peek(&mut self) -> &mut T {
 		self.data.get_unchecked_mut(0)
 	}
 
-	#[inline(always)]
+	#[inline]
 	unsafe fn impl_clear<F>(&mut self, mut f: F) where F: FnMut(&mut [T]) {
-		f(from_raw_parts_mut(self.data.get_unchecked_mut(0), self.len));
+		f(self.data.trunc_unchecked_mut(self.len));
 		self.len = 0;
 	}
 
-	#[inline(always)]
+	#[inline]
 	unsafe fn impl_copy<F>(&mut self, data: &'a mut [T], mut f: F) where F: FnMut(&mut [T]) {
-		copy_nonoverlapping(self.data.get_unchecked_mut(0), data.get_unchecked_mut(0), self.len);
+		data.copy_unchecked(0, self.data.trunc_unchecked(self.len));
 		let old = replace(&mut self.data, data);
 		f(old)
 	}
@@ -149,6 +180,7 @@ unsafe impl<'a, T: 'a + Priority> ContainerImpl<'a, T> for PrioQueue<'a, T> {
 impl<'a, T: 'a + Priority> PrioQueue<'a, T> {
 	#[inline]
 	fn sift_down(&mut self, idx: usize, len: usize) {
+		// TODO: fewer moves?
 		unsafe {
 			let mut i = idx;
 			let mut j = (i << 1) + 1;
@@ -158,7 +190,7 @@ impl<'a, T: 'a + Priority> PrioQueue<'a, T> {
 					j = k;
 				}
 				if self.data.get_unchecked(j).lt_prio(self.data.get_unchecked(i)) { break }
-				swap_unchecked(self.data, i, j);
+				self.data.swap_unchecked(i, j);
 				i = j;
 				j = (i << 1) + 1;
 			}
@@ -167,18 +199,19 @@ impl<'a, T: 'a + Priority> PrioQueue<'a, T> {
 
 	#[inline]
 	fn sift_up(&mut self, idx: usize) {
+		// TODO: fewer moves?
 		let mut i = idx;
 		while i > 0 {
 			let j = (i - 1) >> 1;
 			unsafe {
 				if self.data.get_unchecked(i).le_prio(&self.data[j]) { break }
-				swap_unchecked(self.data, i, j);
+				self.data.swap_unchecked(i, j);
 			}
 			i = j;
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn heapify(&mut self) {
 		let len = self.len;
 		for i in (0..(len / 2)).rev() {
@@ -186,21 +219,21 @@ impl<'a, T: 'a + Priority> PrioQueue<'a, T> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn sort(&mut self) {
 		for i in (1..self.len).rev() {
-			swap_unchecked(self.data, 0, i);
+			unsafe { self.data.swap_unchecked(0, i) };
 			self.sift_down(0, i);
 		}
-		unsafe { from_raw_parts_mut(self.data.get_unchecked_mut(0), self.len).reverse() }
+		unsafe { self.data.trunc_unchecked_mut(self.len).reverse() }
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn iter(&self) -> PrioQueueIter<T> {
 		// TODO: change this to &mut Self when ICE goes away
 		unsafe {
 			transmute::<&PrioQueue<T>, &mut PrioQueue<T>>(self).sort();
-			PrioQueueIter(from_raw_parts(self.data.get_unchecked(0), self.len))
+			PrioQueueIter(self.data.trunc_unchecked(self.len))
 		}
 	}
 }

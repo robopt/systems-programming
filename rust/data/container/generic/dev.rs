@@ -35,9 +35,24 @@ pub unsafe trait ContainerImpl<'a, T: 'a> where Self: Sized {
 	/// or modify the value at the pointer.
 	unsafe fn impl_remove(&mut self) -> &mut T;
 
+	/// Marks multiple elements as removed from the container, running a function
+	/// on them, and returning the number of elements removed. Should do the same
+	/// as removing elements from the container until the container is empty, and
+	/// should be faster if the implementation allows it. Should not modify the
+	/// original locations of the removed elements besides passing them into a
+	/// function.
+	unsafe fn impl_forget<F>(&mut self, n: usize, f: F) -> usize where F: FnMut(&mut T);
+
 	/// Adds an element to the container. Should not check if the container is
 	/// full.
 	unsafe fn impl_add(&mut self, value: T);
+
+	/// Adds multiple elements to the container, returning the number of elements
+	/// added. Should do the same as adding copies of the elements from the array
+	/// into the container until the container is full, and should be faster if
+	/// the implementation allows it. Should copy the elements from the array
+	/// without modifying the original array.
+	fn impl_extend(&mut self, value: &mut [T]) -> usize;
 
 	/// Marks a container as empty after running a function on all of its
 	/// elements. Should not modify the container's data besides passing them into
@@ -53,15 +68,8 @@ pub unsafe trait ContainerImpl<'a, T: 'a> where Self: Sized {
 }
 
 /// Implements Debug for a container, displaying the contents of the container
-/// in a DebugList.
-///
-/// # Examples
-///
-/// ```
-/// container_debug(Queue; )
-/// container_debug(PrioQueue; Priority)
-/// container_debug(PrioQueue2; Priority, Priority2)
-/// ````
+/// in a DebugList. Called as `container_debug(Type; Constraint, ...)` or as
+/// `container_debug(Type; )`.
 #[macro_export]
 macro_rules! container_debug {
 	($name:ident; $($constraint:ident),*) => {

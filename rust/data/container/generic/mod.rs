@@ -7,6 +7,13 @@ use self::dev::ContainerImpl;
 
 /// Generic container; automatically extends ContainerImpl.
 pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
+	/// Constructs a container an existing array of data.
+	#[inline(always)]
+	fn from_full(data: &'a mut [T]) -> Self {
+		let len = data.len();
+		unsafe { <Self as ContainerImpl<T>>::impl_construct(data, len) }
+	}
+
 	/// Constructs a container from an existing array of data.
 	///
 	/// # Panics
@@ -19,7 +26,7 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 	/// if `len < data.len()`.
 	#[inline(always)]
 	unsafe fn from_existing(data: &'a mut [T], len: usize) -> Self {
-		assert!(len <= data.len());
+		debug_assert!(len <= data.len());
 		<Self as ContainerImpl<T>>::impl_construct(data, len)
 	}
 
@@ -31,6 +38,17 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 	#[inline(always)]
 	unsafe fn from_empty(data: &'a mut [T]) -> Self {
 		<Self as ContainerImpl<T>>::impl_construct(data, 0)
+	}
+
+	/// Constructs a container from a pointer to an existing array of data.
+	///
+	/// # Safety
+	///
+	/// This is unsafe because it assumes that `data` is `cap` long and
+	/// initialized.
+	#[inline(always)]
+	unsafe fn from_full_ptr(data: *mut T, cap: usize) -> Self {
+		<Self as ContainerImpl<T>>::impl_construct(from_raw_parts_mut(data, cap), cap)
 	}
 
 	/// Constructs a container from a pointer to an existing array of data.
@@ -85,6 +103,18 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 		}
 	}
 
+	/// Returns a mutable reference to the next element in the container which
+	/// would be removed by a call to `remove()`.
+	///
+	/// # Panics
+	///
+	/// Panics with `err` if `is_empty()`.
+	#[inline(always)]
+	fn peek_mut_or_panic(&mut self, err: &'static str) -> &mut T {
+		debug_assert!(!self.is_empty(), "{}", err);
+		unsafe { self.impl_peek() }
+	}
+
 	/// Returns an immutable reference to the next element in the container which
 	/// would be removed by a call to `remove()`.
 	#[inline(always)]
@@ -94,6 +124,17 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 		} else {
 			unsafe { Option::Some((transmute::<&Self, &mut Self>(self)).impl_peek()) }
 		}
+	}
+	/// Returns an immutable reference to the next element in the container which
+	/// would be removed by a call to `remove()`.
+	///
+	/// # Panics
+	///
+	/// Panics with `err` if `is_empty()`.
+	#[inline(always)]
+	fn peek_or_panic(&self, err: &'static str) -> &T {
+		debug_assert!(!self.is_empty(), "{}", err);
+		unsafe { (transmute::<&Self, &mut Self>(self)).impl_peek() }
 	}
 
 	/// Removes a value from the container and returns the value, or `None` if the
@@ -114,9 +155,7 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 	/// Panics with `err` if `is_empty()`.
 	#[inline(always)]
 	fn remove_or_panic(&mut self, err: &'static str) -> T {
-		if self.is_empty() {
-			panic!("{}", err)
-		}
+		debug_assert!(!self.is_empty(), "{}", err);
 		unsafe { read(self.impl_remove()) }
 	}
 
@@ -139,10 +178,22 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 	/// Panics with `err` if `is_empty()`.
 	#[inline(always)]
 	fn remove_and_zero_or_panic(&mut self, err: &'static str) -> T {
-		if self.is_empty() {
-			panic!("{}", err)
-		}
+		debug_assert!(!self.is_empty(), "{}", err);
 		unsafe { read_and_zero(self.impl_remove()) }
+	}
+
+	/// Removes multiple values from the container and returns how many values
+	/// were removed.
+	#[inline(always)]
+	fn forget(&mut self, n: usize) -> usize {
+		unsafe { self.impl_forget(n, |x| { read(x); }) }
+	}
+
+	/// Removes multiple values from the container and returns how many values
+	/// were removed. Zeroes out the values' original locations in memory.
+	#[inline(always)]
+	fn forget_and_zero(&mut self, n: usize) -> usize {
+		unsafe { self.impl_forget(n, |x| { read_and_zero(x); }) }
 	}
 
 	/// Adds an element to the container.
@@ -152,29 +203,50 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 	/// Panics with `err` if `is_full()`.
 	#[inline(always)]
 	fn add_or_panic(&mut self, value: T, err: &'static str) {
-		if self.is_full() {
-			panic!("{}", err)
-		}
-		unsafe {
-			self.impl_add(value)
-		}
+		debug_assert!(!self.is_full(), "{}", err);
+		unsafe { self.impl_add(value) }
+	}
+
+	/// Adds multiple elements to the container and returns how many values were
+	/// added. May be faster than multiple adds if the implementation allows it.
+	///
+	/// # Safety
+	///
+	/// This is unsafe because it copies the original values in the array instead
+	/// of moving them.
+	#[inline(always)]
+	fn extend(&mut self, values: &mut [T]) -> usize {
+		self.impl_extend(values)
+	}
+
+	/// Adds multiple elements to the container. May be faster than multiple adds
+	/// if the implementation allows it.
+	///
+	/// # Panics
+	///
+	/// Panics if the value was partially added to the container.
+	///
+	/// # Safety
+	///
+	/// This is unsafe because it copies the original values in the array instead
+	/// of moving them.
+	#[inline(always)]
+	fn extend_or_panic(&mut self, values: &mut [T], err: &'static str) {
+		let n = self.impl_extend(values);
+		debug_assert!(n == values.len(), "{}", err);
 	}
 
 	/// Drops all of the elements in the container.
 	#[inline(always)]
 	fn clear(&mut self) {
-		unsafe {
-			self.impl_clear(|slice| for x in slice { read(x); })
-		}
+		unsafe { self.impl_clear(|slice| for x in slice { read(x); }) }
 	}
 
 	/// Drops all of the elements in the container. Zeroes out the container's
 	/// buffer.
 	#[inline(always)]
 	fn clear_and_zero(&mut self) {
-		unsafe {
-			self.impl_clear(|slice| for x in slice { read_and_zero(x); })
-		}
+		unsafe { self.impl_clear(|slice| for x in slice { read_and_zero(x); }) }
 	}
 
 	/// Copies the container's data to a new pointer. Guarantees that the data
@@ -190,7 +262,7 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 	/// data, and because `data[..self.len]` is not dropped.
 	#[inline(always)]
 	unsafe fn move_data(&mut self, data: &'a mut [T]) {
-		assert!(self.len() <= data.len());
+		debug_assert!(self.len() <= data.len());
 		self.impl_copy(data, |_| ());
 	}
 
@@ -206,7 +278,7 @@ pub trait Container<'a, T: 'a> where Self: ContainerImpl<'a, T> {
 	/// This is unsafe because `data[..self.len]` is not dropped.
 	#[inline(always)]
 	unsafe fn move_data_and_zero(&mut self, data: &'a mut [T]) {
-		assert!(data.len() < self.len());
+		debug_assert!(data.len() < self.len());
 		self.impl_copy(data, |x| {
 			let len = x.len();
 			write_bytes(x.get_unchecked_mut(0) as *mut T, 0, len)
