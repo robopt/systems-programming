@@ -54,21 +54,21 @@ CPP = cpp
 CPPFLAGS = $(USER_OPTIONS) -nostdinc $(INCLUDES)
 
 CC = gcc
-CFLAGS = -m32 -std=c99 -fno-stack-protector -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
+CFLAGS = -m32 -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
 
-AS = as
+AS = as -Wall
 ASFLAGS = --32
 
 LD = ld
 LDFLAGS = -melf_i386
 
-#		
+#
 # Transformation rules - these ensure that all compilation
 # flags that are necessary are specified
 #
 # Note use of 'cpp' to convert .S files to temporary .s files: this allows
 # use of #include/#define/#ifdef statements. However, the line numbers of
-# error messages reflect the .s file rather than the original .S file. 
+# error messages reflect the .s file rather than the original .S file.
 # (If the .s file already exists before a .S file is assembled, then
 # the temporary .s file is not deleted.  This is useful for figuring
 # out the line numbers of error messages, but take care not to accidentally

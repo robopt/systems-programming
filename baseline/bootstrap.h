@@ -16,8 +16,8 @@
 /*
 ** The target program itself
 */
-#define TARGET_SEGMENT	0x00001000	/* 0001:0000 */
-#define TARGET_ADDRESS	0x00010000	/* and upward */
+#define	TARGET_SEGMENT	0x00001000	/* 0001:0000 */
+#define	TARGET_ADDRESS	0x00010000	/* and upward */
 #define	TARGET_STACK	0x00010000	/* and downward */
 
 /*
@@ -36,7 +36,7 @@
 ** The Interrupt Descriptor Table (0000:2500 - 0000:2D00)
 */
 #define	IDT_SEGMENT	0x00000250
-#define IDT_ADDRESS	0x00002500
+#define	IDT_ADDRESS	0x00002500
 
 /*
 ** Physical Memory Map Table (0000:2D00 - 0000:2D08)
@@ -49,6 +49,19 @@
 #define	MMAP_CFG_HI	0x06	/* configured memory - high register */
 #define	MMAP_PROGRAMS	0x08	/* # of programs loaded from disk (+ kernel) */
 #define	MMAP_SECTORS	0x0a	/* table of sector counts for each program */
+
+/*
+** Page map flags
+*/
+#define	PAGE_PRESENT		0x01
+#define	PAGE_WRITE		0x02
+#define	PAGE_USER		0x04
+#define	PAGE_WRITETHROUGH	0x08
+#define	PAGE_NOCACHE		0x10
+#define	PAGE_ACCESSED		0x20
+#define	PAGE_4MIB		0x40
+#define	PAGE_DIRTY		0x40
+#define	PAGE_GLOBAL		0x80
 
 /*
 ** Real Mode Program(s) Text Area (0000:3000 - 0x7c00)

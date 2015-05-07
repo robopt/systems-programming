@@ -13,7 +13,7 @@
 **
 **	Input:	We maintain a buffer of incoming characters that haven't
 **		yet been read by processes.  When a character comes in,
-**		if there is no process waiting for it, it goes in the 
+**		if there is no process waiting for it, it goes in the
 **		buffer; otherwise, the first waiting process is awakened
 **		and it gets the character.
 **
@@ -115,6 +115,9 @@ static uint8_t _ier;
 */
 
 static void _sio_isr( int vector, int code ) {
+	(void)(vector);
+	(void)(code);
+
 	int eir, lsr, msr;
 	int ch;
 
@@ -197,7 +200,7 @@ static void _sio_isr( int vector, int code ) {
 			_kpanic( "_sio_isr", "unknown device status" );
 
 		}
-	
+
 	}
 
 	// should never reach this point!
@@ -272,7 +275,7 @@ void _sio_modinit( void ) {
 			 UA4_LCR_BITS_8 |
 			 UA4_LCR_1_STOP_BIT |
 			 UA4_LCR_NO_PARITY );
-	
+
 	/*
 	** Set the ISEN bit to enable the interrupt request signal.
 	*/
@@ -403,7 +406,7 @@ int _sio_readc( void ) {
 	// assume there is no character available
 	ch = -1;
 
-	// 
+	//
 	// If there is a character, return it
 	//
 
@@ -593,16 +596,16 @@ void _sio_dump( void ) {
 	c_printf( "SIO buffers:  in %d ot %d\n", _incount, _outcount );
 	if( _incount ) {
 		c_puts( " in: \"" );
-		ptr = _innext; 
-		for( n = 0; n < _incount; ++n ) 
+		ptr = _innext;
+		for( n = 0; (unsigned)n < _incount; ++n )
 			_put_char_or_code( *ptr++ );
 		c_puts( "\"\n" );
 	}
 
 	if( _outcount ) {
 		c_puts( " ot: \"" );
-		ptr = _outnext; 
-		for( n = 0; n < _outcount; ++n ) 
+		ptr = _outnext;
+		for( n = 0; (unsigned)n < _outcount; ++n )
 			_put_char_or_code( *ptr++ );
 		c_puts( "\"\n" );
 	}

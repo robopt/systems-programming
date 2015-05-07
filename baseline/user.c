@@ -24,7 +24,7 @@
 ** header file for a description of which system calls are used by
 ** each user process.
 **
-** Output from user processes is always alphabetic.  Uppercase 
+** Output from user processes is always alphabetic.  Uppercase
 ** characters are "expected" output; lowercase are "erroneous"
 ** output.
 **

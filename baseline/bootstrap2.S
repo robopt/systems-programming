@@ -109,23 +109,23 @@ diskok:
 	movw	$firstcount, %di
 
 	pushw	%ds
-	movw	(%di), %bx
+	movl	(%di), %ebx
 	movw	$MMAP_SEGMENT, %ax
 	movw	%ax, %ds
-	movw	%bx, MMAP_SECTORS	/* store kernel image size */
+	movl	%ebx, MMAP_SECTORS	/* store kernel image size */
 	popw	%ds
 
 nextblock:
-	movw	(%di), %ax	/* get the # of sectors */
-	testw	%ax, %ax	/* is it zero? */
+	movl	(%di), %eax	/* get the # of sectors */
+	testl	%eax, %eax	/* is it zero? */
 	jz	done_loading	/*   yes, nothing more to load. */
 
-	subw	$2, %di
-	movw	(%di), %bx	/* get the segment value */
-	movw	%bx, %es	/*   and copy it to %es */
-	subw	$2, %di
-	movw	(%di), %bx	/* get the address offset */
-	subw	$2, %di
+	subw	$4, %di
+	movl	(%di), %ebx	/* get the segment value */
+	movl	%ebx, %es	/*   and copy it to %es */
+	subw	$4, %di
+	movl	(%di), %ebx	/* get the address offset */
+	subw	$4, %di
 	pushw	%di		/* save di */
 	call	readprog	/* read this program block, */
 	popw	%di		/* and restore di */
@@ -138,14 +138,14 @@ nextblock:
 **	es:bx = starting address for the block
 */
 readprog:
-	pushw	%ax		/* save sector count */
+	pushw	%eax		/* save sector count */
 
 	movw	$3, %cx		/* initial retry count is 3 */
 retry:
 	pushw	%cx		/* push the retry count on the stack. */
 
-	movw	sec, %cx	/* get sector number */
-	movw	head, %dx	/* get head number */
+	movl	sec, %ecx	/* get sector number */
+	movl	head, %edx	/* get head number */
 	movb	drive, %dl
 
 	movw	$0x0201, %ax	/* read 1 sector */
@@ -194,8 +194,8 @@ readcont2:
 	jmp	.		/* and freeze */
 
 save_sector:
-	movw	%cx, sec	/* save sector number */
-	movw	%dx, head	/*   and head number */
+	movl	%ecx, sec	/* save sector number */
+	movl	%edx, head	/*   and head number */
 
 	popw	%ax		/* discard the retry count */
 	popw	%ax		/* get the sector count from the stack */
@@ -301,30 +301,12 @@ move_gdt:
 	ret
 
 /*
-** Determine the amount of physical memory available to the system.
-*/
-check_mem:
-	pushw	%ax
-	pushw	%ds
-	movw	$MMAP_SEGMENT, %ax
-	movw	%ax, %ds	  /* Write relative to the memory map start */
-	movw	$0xE801, %ax	  /* Get memory size for >64M configurations */
-	int	$0x15
-	movw	%ax, MMAP_EXT_LO  /* extended memory between 1M - 16M in K */
-	movw	%bx, MMAP_EXT_HI  /* extended memory > 16M in 64K blocks */
-	movw	%cx, MMAP_CFG_LO  /* configured memory between 1M - 16M in K */
-	movw	%dx, MMAP_CFG_HI  /* configured memory > 16M in 64K blocks */
-	popw	%ds
-	popw	%ax
-	ret
-
-/*
 ** DATA AREAS.
 **
 ** Next sector number and head number to read from.
 */
-sec:	.word	2	/* cylinder=0, sector=1 */
-head:	.word	0	/* head=0 */
+sec:	.long	2	/* cylinder=0, sector=1 */
+head:	.long	0	/* head=0 */
 max_sec:	.byte	19	/* up to 18 sectors per floppy track */
 max_head:	.byte	2	/* only two r/w heads per floppy drive */
 
@@ -390,6 +372,24 @@ drive:	.word	0	/* 0x00 = floppy, 0x80 = usb */
 
 boot_sig:
 	.word 0xAA55
+
+/*
+** Determine the amount of physical memory available to the system.
+*/
+check_mem:
+	pushw	%ax
+	pushw	%ds
+	movw	$MMAP_SEGMENT, %ax
+	movw	%ax, %ds	  /* Write relative to the memory map start */
+	movw	$0xE801, %ax	  /* Get memory size for >64M configurations */
+	int	$0x15
+	movw	%ax, MMAP_EXT_LO  /* extended memory between 1M - 16M in K */
+	movw	%bx, MMAP_EXT_HI  /* extended memory > 16M in 64K blocks */
+	movw	%cx, MMAP_CFG_LO  /* configured memory between 1M - 16M in K */
+	movw	%dx, MMAP_CFG_HI  /* configured memory > 16M in 64K blocks */
+	popw	%ds
+	popw	%ax
+	ret
 
 /*
 ** Startup code.
@@ -567,10 +567,10 @@ gdt_len = end_gdt - start_gdt
 ** to be loaded, their values appear just before the previous set.
 */
 
-	.org	SECTOR_SIZE * 2 - 2 * 3
+	.org	SECTOR_SIZE * 2 - 4 * 3
 firstoffset:
-	.word	0	/* target offset will go here */
+	.long	0	/* TARGET_ADDRESS will go here */
 firstsegment:
-	.word	0	/* target segment will go here */
+	.long	0	/* TARGET_SEGMENT will go here */
 firstcount:
-	.word	0	/* n_sectors for 1st module will go here */
+	.long	0	/* n_sectors for 1st module will go here */

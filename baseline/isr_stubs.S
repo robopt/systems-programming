@@ -78,8 +78,8 @@ isr_save:
 **	    saved CS		saved by the hardware
 **	    saved EFLAGS	saved by the hardware
 */
-	pusha			// save E*X, ESP, EBP, ESI, EDI
-	pushl	%ds		// save segment registers
+	pusha			/* save E*X, ESP, EBP, ESI, EDI */
+	pushl	%ds		/* save segment registers */
 	pushl	%es
 	pushl	%fs
 	pushl	%gs
@@ -95,7 +95,7 @@ isr_save:
 **
 ** Set up parameters for the ISR call.
 */
-	movl	52(%esp),%eax	// get vector number and error code
+	movl	52(%esp),%eax	/* get vector number and error code */
 	movl	56(%esp),%ebx
 
 /*
@@ -104,24 +104,24 @@ isr_save:
 	.globl	_current
 	.globl	_system_esp
 
-	movl	_current, %edx	// save context pointer for the current proc
-	movl	%esp, (%edx)	// (must be the first PCB field)
+	movl	_current, %edx	/* save context pointer for the current proc */
+	movl	%esp, (%edx)	/* (must be the first PCB field) */
 
-		// NOTE:  INHERENTLY NON-REENTRANT!!!
-	movl	_system_esp, %esp	// switch to OS stack
+	/* NOTE:  INHERENTLY NON-REENTRANT!!! */
+	movl	_system_esp, %esp	/* switch to OS stack */
 
 /*
 ** END MOD for 20145 CSCI452
 */
-	pushl	%ebx		// put them on the top of the stack ...
-	pushl	%eax		// ... as parameters for the ISR
+	pushl	%ebx		/* put them on the top of the stack ... */
+	pushl	%eax		/* ... as parameters for the ISR */
 
 /*
 ** Call the ISR
 */
 	movl	__isr_table(,%eax,4),%ebx
 	call	*%ebx
-	addl	$8,%esp		// pop the two parameters
+	addl	$8,%esp		/* pop the two parameters */
 
 /*
 ** Context restore begins here
@@ -133,8 +133,8 @@ __isr_restore:
 ** MOD for 20145 CSCI452
 */
 
-	movl	_current, %ebx	// return to user stack
-	movl	(%ebx), %esp	// ESP now points to context save area
+	movl	_current, %ebx	/* return to user stack */
+	movl	(%ebx), %esp	/* ESP now points to context save area */
 
 /*
 ** END MOD for 20145 CSCI452
@@ -144,7 +144,7 @@ __isr_restore:
 /*
 ** DEBUGGING CODE PART 1
 **
-** This code will execute during each context restore, and 
+** This code will execute during each context restore, and
 ** should be modified to print out whatever debugging information
 ** is desired.
 **
@@ -167,9 +167,9 @@ __isr_restore:
 
 	.globl	_system_time
 
-	movl	12(%ebx), %eax	// PID, PPID
+	movl	12(%ebx), %eax	/* PID, PPID */
 	pushl	%eax
-	pushl	_system_time	// and current time
+	pushl	_system_time	/* and current time */
 
 /*
 ** END MOD for 20145 CSCI452
@@ -184,7 +184,7 @@ __isr_restore:
 ** MOD for 20145 CSCI452
 */
 
-	addl	$20,%esp	// now five things to remove
+	addl	$20,%esp	/* now five things to remove */
 
 /*
 ** END MOD for 20145 CSCI452
@@ -198,14 +198,14 @@ __isr_restore:
 /*
 ** Restore the context.
 */
-	popl	%ss		// restore the segment registers
+	popl	%ss		/* restore the segment registers */
 	popl	%gs
 	popl	%fs
 	popl	%es
 	popl	%ds
-	popa			// restore others
-	addl	$8, %esp	// discard the error code and vector
-	iret			// and return
+	popa			/* restore others */
+	addl	$8, %esp	/* discard the error code and vector */
+	iret			/* and return */
 
 #ifdef ISR_DEBUGGING_CODE
 /*

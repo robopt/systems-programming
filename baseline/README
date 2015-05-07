@@ -7,7 +7,7 @@ Date:     4/17/15
 Notes on the Makefile:
 
 	DO NOT USE makemake!  You must edit the given Makefile to tell
-	it about the file(s) you create.  Add your own file names (both 
+	it about the file(s) you create.  Add your own file names (both
 	source and object versions) to the U_* macros at the top of the
 	Makefile.
 
@@ -88,19 +88,19 @@ Compiling your program creates several files:
 
 		This file will be named floppy.image or usb.image,
 		depending on which device you'll be using.
-	
+
 	BuildImage used to patch the system length into the boot sector
 		of the disk.image file
-	
+
 Other things you can 'make':
 
 	prog.dis a disassembly of the prog.o file - a text version of the
 		binary machine code
-	
+
 	clean	deletes all object, listing, and binary files
 
 	depend	recreates the dependency lists in the Makefile
-	
+
 Loading additional files:
 
 	You can load additional files into memory by adding the name of

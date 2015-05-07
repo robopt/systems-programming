@@ -54,7 +54,7 @@ uint32_t *_system_esp;		// OS %ESP value
 */
 
 void _stack_modinit( void ) {
-	
+
 	// allocate and clear the free stack queue
 
 	if( _queue_alloc(&_free_stacks,1) != 1 ||
@@ -63,13 +63,13 @@ void _stack_modinit( void ) {
 	}
 
 	_queue_init( _free_stacks, NULL );
-	
+
 	// "free" all the stacks
 
 	for( int i = 0; i < N_STACKS; ++i ) {
 		_stack_dealloc( &_stacks[i] );
 	}
-	
+
 	// report that we have finished
 
 	c_puts( " STACK" );
@@ -99,7 +99,7 @@ stack_t *_stack_alloc( void ) {
 */
 
 void _stack_dealloc( stack_t *stack ) {
-	
+
 	// sanity check:  avoid deallocating a NULL pointer
 	if( stack == NULL ) {
 		// should this be an error?

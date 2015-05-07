@@ -68,6 +68,9 @@ queue_t _sleeping;	// sleeping processes
 */
 
 static void _sys_isr( int vector, int code ) {
+	(void)(vector);
+	(void)(code);
+
 	uint32_t which= _current->context->eax;
 
 	// verify that we were given a legal code
@@ -115,7 +118,7 @@ static void _sys_isr( int vector, int code ) {
 */
 
 static void _sys_exit( pcb_t *pcb ) {
-	
+
 	// tear down the PCB structure
 
 	_stack_dealloc( pcb->stack );
@@ -179,7 +182,7 @@ static void _sys_spawnp( pcb_t *pcb ) {
 
 static void _sys_sleep( pcb_t *pcb ) {
 	uint32_t sleeptime = (uint32_t) ARG(1,pcb->context);
-	
+
 	// if the desired sleep time is 0, treat this as a yield()
 
 	if( sleeptime == 0 ) {
@@ -199,7 +202,7 @@ static void _sys_sleep( pcb_t *pcb ) {
 		_queue_insert( _sleeping, (void *)pcb, (void *) pcb->wakeup );
 
 	}
-	
+
 	// no current process - pick another one
 
 	_dispatch();
@@ -404,7 +407,7 @@ static void _sys_write( pcb_t *pcb ) {
 			_sio_writes( buf, count );
 			RET(pcb->context) = count;
 		}
-	
+
 	} else {	// bad parameter!
 
 		RET(pcb->context) = -1;

@@ -50,7 +50,7 @@ queue_t _ready[N_READY];	// the MLQ ready queue structure
 */
 
 void _sched_modinit( void ) {
-	
+
 	// allocate and initialize all the MLQ levels
 
 	if( _queue_alloc(_ready,N_READY) != N_READY ) {
@@ -60,11 +60,11 @@ void _sched_modinit( void ) {
 	for( int i = 0; i < N_READY; ++i ) {
 		_queue_init( _ready[i], NULL );
 	}
-	
+
 	// no current process, initially
 
 	_current = NULL;
-	
+
 	// report that we have finished
 
 	c_puts( " SCHED" );
@@ -77,7 +77,7 @@ void _sched_modinit( void ) {
 */
 
 void _schedule( pcb_t *pcb ) {
-	
+
 #ifdef DEBUG
 	if( pcb == NULL ) {
 		_kpanic( "_schedule", "NULL pcb pointer" );
@@ -89,7 +89,7 @@ void _schedule( pcb_t *pcb ) {
 	if( pcb->prio >= N_PRIOS ) {
 		pcb->prio = PRIO_USER_LOW;
 	}
-	
+
 	// mark this process as ready
 
 	pcb->state = STATE_READY;
@@ -107,7 +107,7 @@ void _schedule( pcb_t *pcb ) {
 */
 
 void _dispatch( void ) {
-	
+
 	// select a process from the highest-priority
 	// ready queue that is not empty
 

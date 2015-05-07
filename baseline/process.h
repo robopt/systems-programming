@@ -47,7 +47,7 @@
 #define	PRIO_DEFAULT	PRIO_USER_STD
 
 #define	N_PRIOS		4
-#define	PRIO_LAST	PRIO_LOW
+#define	PRIO_LAST	PRIO_USER_LOW
 
 // PID of the initial user process
 

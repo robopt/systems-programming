@@ -60,7 +60,7 @@ _start:
 	movw	%ax, %ss
 
 	movl	$TARGET_STACK, %ebp	/* set up the system frame pointer */
-	movl	%ebp, %esp	/* and stack pointer */
+	movl	%ebp, %esp		/* and stack pointer */
 
 #ifdef CLEAR_BSS_SEGMENT
 
@@ -88,7 +88,7 @@ clearbss:
 **
 ** Initialize devices
 */
-	call	_init		// initialize the OS
+	call	_init		/* initialize the OS */
 
 /*
 ** Restore the first user process context
@@ -97,7 +97,7 @@ clearbss:
 ** we're returning to the context restore routine after handling
 ** an interrupt!!!
 */
-	jmp	__isr_restore   // defined in isr_stubs.S
+	jmp	__isr_restore   /* defined in isr_stubs.S */
 
 #else
 
@@ -108,7 +108,7 @@ clearbss:
 ** Initialize various devices
 */
 	call	__init_interrupts	/* initialize the interrupt system */
-	call	c_io_init	/* initialize the console I/O routines */
+	call	c_io_init		/* initialize the console I/O routines */
 
 /*
 ** Call the user's main program
@@ -118,14 +118,14 @@ clearbss:
 /*
 ** Returned from the main function!  Stop execution.
 */
-	cli			// Disable interrupts
-	pushl	$message	// Print the message saying that
-	pushl	$24		//   the main function returned.
-	movl	$80,%eax	//   This goes to the lower right
-	subl	$messagelen,%eax //  corner of the screen.
+	cli			/* Disable interrupts */
+	pushl	$message	/* Print the message saying that */
+	pushl	$24		/*   the main function returned. */
+	movl	$80,%eax	/*   This goes to the lower right */
+	subl	$messagelen,%eax /*  corner of the screen. */
 	pushl	%eax
 	call	c_puts_at
-die:	hlt			// Stop.
+die:	hlt			/* Stop. */
 	jmp	die
 
 message: .string "     ***** Returned from main! *****     "
@@ -136,8 +136,8 @@ messagelen = . - message - 1
 /*
 ** Support routines needed for boot up and the console.
 */
-ARG1	= 8			// Offset to 1st argument
-ARG2	= 12			// Offset to 2nd argument
+ARG1	= 8			/* Offset to 1st argument */
+ARG2	= 12			/* Offset to 2nd argument */
 
 /*
 ** Name:	__inb, __inw, __inl
@@ -152,26 +152,26 @@ ARG2	= 12			// Offset to 2nd argument
 
 __inb:
 	enter	$0,$0
-	xorl	%eax,%eax	// Clear the high order bytes of %eax
-	movl	ARG1(%ebp),%edx	// Move port number to %edx
-	inb	(%dx)		// Get a byte from the port into %al (low
-	leave			//   byte of %eax)
+	xorl	%eax,%eax	/* Clear the high order bytes of %eax */
+	movl	ARG1(%ebp),%edx	/* Move port number to %edx */
+	inb	(%dx)		/* Get a byte from the port into %al (low */
+	leave			/*   byte of %eax) */
 	ret
 __inw:
 	enter	$0,$0
-	xorl	%eax,%eax	// Clear the high order bytes of %eax
-	movl	ARG1(%ebp),%edx	// Move port number to %edx
-	inw	(%dx)		// Get a word from the port into %ax (low
-	leave			//   word of %eax)
+	xorl	%eax,%eax	/* Clear the high order bytes of %eax */
+	movl	ARG1(%ebp),%edx	/* Move port number to %edx */
+	inw	(%dx)		/* Get a word from the port into %ax (low */
+	leave			/*   word of %eax) */
 	ret
 __inl:
 	enter	$0,$0
-	xorl	%eax,%eax	// Clear the high order bytes of %eax
-	movl	ARG1(%ebp),%edx	// Move port number to %edx
-	inl	(%dx)		// Get a longword from the port into %eax
+	xorl	%eax,%eax	/* Clear the high order bytes of %eax */
+	movl	ARG1(%ebp),%edx	/* Move port number to %edx */
+	inl	(%dx)		/* Get a longword from the port into %eax */
 	leave
 	ret
-	
+
 /*
 ** Name:	__outb, __outw, __outl
 **
@@ -183,23 +183,23 @@ __inl:
 	.globl	__outb, __outw, __outl
 __outb:
 	enter	$0,$0
-	movl	ARG1(%ebp),%edx	// Get the port number into %edx,
-	movl	ARG2(%ebp),%eax	//   and the value into %eax
-	outb	(%dx)		// Output that byte to the port
-	leave			//   (only %al is sent)
+	movl	ARG1(%ebp),%edx	/* Get the port number into %edx, */
+	movl	ARG2(%ebp),%eax	/*   and the value into %eax */
+	outb	(%dx)		/* Output that byte to the port */
+	leave			/*   (only %al is sent) */
 	ret
 __outw:
 	enter	$0,$0
-	movl	ARG1(%ebp),%edx	// Get the port number into %edx,
-	movl	ARG2(%ebp),%eax	//   and the value into %eax
-	outw	(%dx)		// Output that word to the port.
-	leave			//   (only %ax is sent)
+	movl	ARG1(%ebp),%edx	/* Get the port number into %edx, */
+	movl	ARG2(%ebp),%eax	/*   and the value into %eax */
+	outw	(%dx)		/* Output that word to the port. */
+	leave			/*   (only %ax is sent) */
 	ret
 __outl:
 	enter	$0,$0
-	movl	ARG1(%ebp),%edx	// Get the port number into %edx,
-	movl	ARG2(%ebp),%eax	//   and the value into %eax
-	outl	(%dx)		// Output that longword to the port.
+	movl	ARG1(%ebp),%edx	/* Get the port number into %edx, */
+	movl	ARG2(%ebp),%eax	/*   and the value into %eax */
+	outl	(%dx)		/* Output that longword to the port. */
 	leave
 	ret
 
@@ -210,8 +210,8 @@ __outl:
 	.globl	__get_flags
 
 __get_flags:
-	pushfl			// Push flags on the stack,
-	popl	%eax		//   and pop them into eax.
+	pushfl			/* Push flags on the stack, */
+	popl	%eax		/*   and pop them into eax. */
 	ret
 
 /*

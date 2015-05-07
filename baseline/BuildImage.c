@@ -187,7 +187,7 @@ extern char *optarg;
 
 void process_args( int ac, char **av ) {
 	int c;
-	
+
 	while( (c=getopt(ac,av,":d:o:b:")) != EOF ) {
 
 		switch( c ) {
@@ -212,12 +212,12 @@ void process_args( int ac, char **av ) {
 			case 'o':	/* -o output_file */
 				output_filename = optarg;
 				break;
-			
+
 			default:
 				usage_error();
-		
+
 		}
-	
+
 	}
 
 	if( !bootstrap_filename ) {
@@ -242,7 +242,7 @@ int main( int ac, char **av ) {
 	int	n_bytes, n_words;
 	short	existing_data[ N_INFO ];
 	int	i;
-	
+
 	/*
 	** Save the program name for error messages
 	*/

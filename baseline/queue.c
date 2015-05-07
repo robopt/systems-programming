@@ -109,13 +109,13 @@ static void _qnode_dealloc( qnode_t *node ) {
 
 static qnode_t *_qnode_alloc( void ) {
 	qnode_t *node;
-	
+
 	node = _free_qnodes;
 	if( node != NULL ) {
 		_free_qnodes = node->next;
 		node->next = NULL;
 	}
-	
+
 	return( node );
 }
 
@@ -135,7 +135,7 @@ void _queue_modinit( void ) {
 	for( int i = 0; i < N_QNODES; ++i ) {
 		_qnode_dealloc( &_qnodes[i] );
 	}
-	
+
 	// steal the first queue for _free_queues
 
 	_free_queues = &_queues[0];
@@ -146,7 +146,7 @@ void _queue_modinit( void ) {
 	for( int i = 1; i < N_QUEUES; ++i ) {
 		_queue_dealloc( &_queues[i] );
 	}
-	
+
 	c_puts( " QUEUE" );
 }
 
@@ -188,7 +188,7 @@ int _queue_alloc( queue_t locs[], int num ) {
 */
 
 void _queue_dealloc( queue_t queue ) {
-	
+
 	// sanity check:  avoid deallocating a NULL pointer
 	if( queue == NULL ) {
 		// should this be an error?
@@ -235,7 +235,7 @@ void _queue_init( queue_t queue, comparef_t compare ) {
 void *_queue_remove( queue_t queue ) {
 	qnode_t *node;
 	void *data;
-	
+
 #ifdef DEBUG
 	if( queue == NULL ) {
 		_kpanic( "_queue_remove", "NULL queue" );
@@ -245,18 +245,18 @@ void *_queue_remove( queue_t queue ) {
 	if( queue->first == NULL ) {
 		return( NULL );
 	}
-	
+
 	node = queue->first;
 	queue->first = node->next;
 	if( queue->first == NULL ) {
 		queue->last = NULL;
 	}
 	queue->size -= 1;
-	
+
 	data = node->data;
-	
+
 	_qnode_dealloc( node );
-	
+
 	return( data );
 }
 
@@ -269,18 +269,18 @@ void *_queue_remove( queue_t queue ) {
 
 void _queue_insert( queue_t queue, void *data, void *key ) {
 	qnode_t *node;
-	
+
 #ifdef DEBUG
 	if( queue == NULL ) {
 		_kpanic( "_queue_insert", "NULL queue" );
 	}
 #endif
-	
+
 	node = _qnode_alloc();
 	if( node == NULL ) {
 		_kpanic( "_queue_insert", "NULL qnode" );
 	}
-	
+
 	node->data = data;
 	node->key = key;
 
@@ -290,26 +290,26 @@ void _queue_insert( queue_t queue, void *data, void *key ) {
 		queue->size = 1;
 		return;
 	}
-	
+
 	if( queue->compare == NULL ) {
 		queue->last->next = node;
 		queue->last = node;
 		queue->size += 1;
 		return;
 	}
-	
+
 	qnode_t *prev, *curr;
-	
+
 	prev = NULL;
 	curr = queue->first;
-	
+
 	while( curr != NULL &&
 		queue->compare(node->key,curr->key) >= 0 ) {
-		
+
 		prev = curr;
 		curr = curr->next;
 	}
-	
+
 	/*
 	**  prev  curr  meaning
 	**  ==============================================
@@ -318,7 +318,7 @@ void _queue_insert( queue_t queue, void *data, void *key ) {
 	**  !NULL !NULL add in middle: new -> curr, prev -> new
 	**  !NULL NULL  add at end:    new -> NULL, prev -> new, last -> new
 	*/
-	
+
 	node->next = curr;
 	if( prev == NULL ) {
 		queue->first = node;
@@ -328,7 +328,7 @@ void _queue_insert( queue_t queue, void *data, void *key ) {
 	if( curr == NULL ) {
 		queue->last = node;
 	}
-	
+
 	queue->size += 1;
 }
 
@@ -371,7 +371,7 @@ void *_queue_kpeek( queue_t queue ) {
 	if( _queue_empty(queue) ) {
 		return( NULL );
 	}
-	
+
 	return( queue->first->key );
 }
 
@@ -394,7 +394,7 @@ void *_queue_dpeek( queue_t queue ) {
 	if( _queue_empty(queue) ) {
 		return( NULL );
 	}
-	
+
 	return( queue->first->data );
 }
 
@@ -417,7 +417,7 @@ void _queue_dump( char *which, queue_t queue ) {
 	c_printf( "first %08x last %08x comp %08x (%d items)\n",
 		  (uint32_t) queue->first, (uint32_t) queue->last,
 		  (uint32_t) queue->compare, queue->size );
-	
+
 	if( _queue_size(queue) > 0 ) {
 		c_puts( " data: " );
 		i = 0;
