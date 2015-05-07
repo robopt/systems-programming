@@ -37,7 +37,7 @@
 
 /*
 *******************************************************************
-** BANK 0 REGISTERS 
+** BANK 0 REGISTERS
 *******************************************************************
 */
 
@@ -113,7 +113,7 @@
 #define UA5_FCR_FIFO_EN		0x01	/* FIFO Enable */
 #define UA5_FCR_FIFO_ENABLED	UA5_FCR_FIFO_EN
 #define UA5_FCR_RXSR 		0x02	/* Receiver Soft Reset */
-#define UA5_FCR_RX_SOFT_RESET	UA5_FCR_RXSR 
+#define UA5_FCR_RX_SOFT_RESET	UA5_FCR_RXSR
 #define UA5_FCR_TXSR		0x04	/* Transmitter Soft Reset */
 #define UA5_FCR_TX_SOFT_RESET	UA5_FCR_TXSR
 #define UA5_FCR_TXFTH0		0x10	/* TX_FIFO threshold level */
@@ -175,7 +175,7 @@
 #define UA4_LCR_1_STOP_BIT	0x00
 #define UA4_LCR_2_STOP_BIT	0x01
 
-#define UA4_LCR_NO_PARITY	0x00	
+#define UA4_LCR_NO_PARITY	0x00
 #define UA4_LCR_ODD_PARITY	UA4_LCR_PEN
 #define UA4_LCR_EVEN_PARITY	(UA4_LCR_PEN|UA4_LCR_EPS)
 #define UA4_LCR_PARITY_LOGIC_1	(UA4_LCR_PEN|UA4_LCR_STKP)

@@ -64,7 +64,7 @@
 pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
 	pcb_t *new;
 	uint32_t *ptr;
-	
+
 	// allocate the new structures
 
 	new = _pcb_alloc();
@@ -130,7 +130,7 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
 	new->pid  = _next_pid++;
 	new->default_quantum = QUANTUM_DEFAULT;
 	new->state = STATE_READY;
-	
+
 	// all done - return the new PCB
 
 	return( new );

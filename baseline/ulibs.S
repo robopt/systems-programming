@@ -43,7 +43,7 @@ SYSCALL(write)
 SYSCALL(get_process_info)
 SYSCALL(get_system_info)
 
-// This is a bogus system call; it's here so that we can test
-// our handling of out-of-range syscall codes in the syscall ISR.
+/* This is a bogus system call; it's here so that we can test */
+/* our handling of out-of-range syscall codes in the syscall ISR. */
 
 SYSCALL(bogus)

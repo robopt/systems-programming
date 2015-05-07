@@ -21,23 +21,18 @@
 #define	TRUE	1
 #define	FALSE	0
 
-#define	DRIVE_FLOPPY	0x00
-#define	DRIVE_USB	0x80
-
 char	*progname;		/* invocation name of this program */
 char	*bootstrap_filename;	/* path of file holding bootstrap program */
 char	*output_filename;	/* path of disk image file */
 FILE	*out;			/* output stream for disk image file */
-short	drive = DRIVE_FLOPPY;	/* boot drive:  0x00 == floppy, 0x80 == usb */
 
 /*
 ** Array into which program information will be stored, starting at the
 ** end and moving back toward the front.  The array is sized at 512
 ** bytes, which is guaranteed to be larger than the maximum possible
 ** space available for this stuff in the bootstrap image.  Thus, the
-** bootstrap image itself (and the amount of space available on the
-** floppy) are the only limiting factors on how many program sections
-** can be loaded.
+** bootstrap image itself is the only limiting factor on how many program
+** sections can be loaded.
 */
 #define	N_INFO	( 512 / sizeof( short ) )
 short	info[ N_INFO ];
@@ -60,14 +55,10 @@ void quit( char *msg, int call_perror ) {
 }
 
 char	usage_error_msg[] =
-  "\nUsage: %s [ -d drive ] -b bootstrap_file -o output_file { prog_file load_address } ...\n\n"
-  "\t'drive' is either 'floppy' or 'usb' (default 'floppy')\n\n"
+  "\nUsage: %s -b bootstrap_file -o output_file { prog_file load_address } ...\n\n"
   "\tThere must be at least one program file and load_address.\n\n"
   "\tLoad addresses may be specified either as 32-bit quantities in hex,\n"
-  "\tdecimal or octal (e.g. 0x10c00, 68608, 0206000 are all equivalent),\n"
-  "\tor as an explicit segment:offset pair whose digits are always\n"
-  "\tinterpreted as hexadecimal values (e.g. 10c0:0000, 1000:0c00 are\n"
-  "\tboth equivalent to the previous examples).\n\n";
+  "\tdecimal or octal (e.g. 0x10c00, 68608, 0206000 are all equivalent).\n\n";
 
 void usage_error( void ){
 	fprintf( stderr, usage_error_msg, progname );
@@ -75,21 +66,17 @@ void usage_error( void ){
 }
 
 int copy_file( FILE *in ){
-	int	n_sectors = 0;
 	char	buf[ 512 ];
-	int	n_bytes;
-	int	i;
+	unsigned n_bytes;
 
 	/*
 	** Copy the file to the output, being careful that the
 	** last block is padded with null bytes.
 	*/
-	n_sectors = 0;
+	unsigned n_sectors = 0;
 	while( (n_bytes = fread( buf, 1, sizeof( buf ), in )) > 0 ){
 		if( n_bytes < sizeof( buf ) ){
-			int	i;
-
-			for( i = n_bytes; i < sizeof( buf ); i += 1 ){
+			for( unsigned i = n_bytes; i < sizeof( buf ); i += 1 ){
 				buf[ i ] = '\0';
 			}
 		}
@@ -104,10 +91,8 @@ int copy_file( FILE *in ){
 void process_file( char *name, char *addr ){
 	FILE	*in;
 	int	n_sectors;
-	long	address;
+	long	address, address_end;
 	short	segment, offset;
-	char	*cp;
-	int	n_bytes;
 	int	valid_address;
 
 	/*
@@ -129,26 +114,14 @@ void process_file( char *name, char *addr ){
 	** Decode the address they gave us.
 	*/
 	valid_address = FALSE;
-	cp = strchr( addr, ':' );
-	if( cp != NULL ){
-		if( strlen( addr ) == 9 && cp == addr + 4 ){
-			char	*u1, *u2;
-			int	a1, a2;
+	char	*unused;
 
-			segment = strtol( addr, &u1, 16 );
-			offset = strtol( addr + 5, &u2, 16 );
-			address = ( segment << 4 ) + offset;
-			valid_address = *u1 == '\0' && *u2 == '\0';
-		}
-	}
-	else {
-		char	*unused;
-
-		address = strtol( addr, &unused, 0 );
-		segment = (short)( address >> 4 );
-		offset = (short)( address & 0xf );
-		valid_address = *unused == '\0' && address <= 0x0009ffff;
-	}
+	address = strtol( addr, &unused, 0 );
+	segment = (short)( address >> 4 );
+	offset = (short)( address & 0xf );
+	valid_address = *unused == '\0' && (
+	    ( address <= 0x0009ffff ) ||
+	    ( address >= 0x00100000 && address <= 0x00dfffff ) );
 	if( !valid_address ){
 		fprintf( stderr, "%s: Invalid address: %s\n", progname, addr );
 		quit( NULL, FALSE );
@@ -157,7 +130,11 @@ void process_file( char *name, char *addr ){
 	/*
 	** Make sure the program will fit!
 	*/
-	if( address + n_sectors * 512 > 0x0009ffff ){
+	address_end = address + n_sectors * 512;
+	if(
+	    ( address_end > 0x0009ffff && address_end < 0x00100000 ) ||
+	    ( address_end > 0x00dfffff )
+	) {
 		fprintf( stderr, "Program %s too large to start at 0x%08x\n",
 		    name, (unsigned int) address );
 		quit( NULL, FALSE );
@@ -187,7 +164,7 @@ extern char *optarg;
 
 void process_args( int ac, char **av ) {
 	int c;
-	
+
 	while( (c=getopt(ac,av,":d:o:b:")) != EOF ) {
 
 		switch( c ) {
@@ -202,22 +179,15 @@ void process_args( int ac, char **av ) {
 			case 'b':	/* -b bootstrap_file */
 				bootstrap_filename = optarg;
 				break;
-			case 'd':	/* -d drive */
-				switch( *optarg ) {
-					case 'f':	drive = DRIVE_FLOPPY; break;
-					case 'u':	drive = DRIVE_USB; break;
-					default:	usage_error();
-				}
-				break;
 			case 'o':	/* -o output_file */
 				output_filename = optarg;
 				break;
-			
+
 			default:
 				usage_error();
-		
+
 		}
-	
+
 	}
 
 	if( !bootstrap_filename ) {
@@ -239,10 +209,9 @@ void process_args( int ac, char **av ) {
 int main( int ac, char **av ) {
 	FILE	*bootimage;
 	int	bootimage_size;
-	int	n_bytes, n_words;
+	unsigned n_bytes, n_words;
 	short	existing_data[ N_INFO ];
-	int	i;
-	
+
 	/*
 	** Save the program name for error messages
 	*/
@@ -305,7 +274,7 @@ int main( int ac, char **av ) {
 		quit( "Read from boot image failed or was too short", FALSE );
 	}
 
-	for( i = 0; i < n_words; i += 1 ){
+	for( unsigned i = 0; i < n_words; i += 1 ){
 		if( existing_data[ i ] != 0 ){
 			quit( "Too many programs to load!", FALSE );
 		}
@@ -319,12 +288,6 @@ int main( int ac, char **av ) {
 	if( fwrite( info + n_info, sizeof( info[ 0 ] ), n_words, out ) != n_words ){
 		quit( "Write to boot image failed or was too short", FALSE );
 	}
-
-	/*
-	** Write the drive index to the image.
-	*/
-	fseek( out, 508, SEEK_SET );
-	fwrite( (void *)&drive, sizeof(drive), 1, out );
 
 	fclose( out );
 

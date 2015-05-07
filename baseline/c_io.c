@@ -42,7 +42,7 @@ unsigned int	max_x, max_y;
 #define	c_puts(x)	fputs( x, stdout )
 #endif
 
-#define	VIDEO_ADDR(x,y)	( unsigned short * ) \
+#define	VIDEO_ADDR(x,y)	( unsigned short * ) ( unsigned long ) \
 		( VIDEO_BASE_ADDR + 2 * ( (y) * SCREEN_X_SIZE + (x) ) )
 
 /*
@@ -278,7 +278,7 @@ void c_scroll( unsigned int lines ){
 	/*
 	** Must copy it line by line.
 	*/
-	for( line = scroll_min_y; line <= scroll_max_y - lines; line += 1 ){
+	for( line = scroll_min_y; (unsigned)line <= scroll_max_y - lines; line += 1 ){
 		from = VIDEO_ADDR( scroll_min_x, line + lines );
 		to = VIDEO_ADDR( scroll_min_x, line );
 		for( c = 0; c < nchars; c += 1 ){
@@ -286,7 +286,7 @@ void c_scroll( unsigned int lines ){
 		}
 	}
 
-	for( ; line <= scroll_max_y; line += 1 ){
+	for( ; (unsigned)line <= scroll_max_y; line += 1 ){
 		to = VIDEO_ADDR( scroll_min_x, line );
 		for( c = 0; c < nchars; c += 1 ){
 			*to++ = ' ' | 0x0700;
@@ -470,7 +470,7 @@ static void __c_do_printf( int x, int y, char **f ){
 
 			case 's':
 				// str = *( (char **)ap )++;
-				str = (char *) (*ap++);
+				str = (char *) (unsigned long) (*ap++);
 				x = padstr( x, y, str, -1, width, leftadjust, padchar );
 				break;
 
@@ -632,6 +632,8 @@ static void __c_input_scan_code( int code ){
 }
 
 static void __c_keyboard_isr( int vector, int code ){
+	(void)(vector);
+	(void)(code);
 	__c_input_scan_code( __inb( KEYBOARD_DATA ) );
 	__outb( PIC_MASTER_CMD_PORT, PIC_EOI );
 }
@@ -696,7 +698,7 @@ void c_io_init( void ){
 	/*
 	** Screen dimensions
 	*/
-	min_x  = SCREEN_MIN_X;	
+	min_x  = SCREEN_MIN_X;
 	min_y  = SCREEN_MIN_Y;
 	max_x  = SCREEN_MAX_X;
 	max_y  = SCREEN_MAX_Y;

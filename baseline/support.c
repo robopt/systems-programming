@@ -74,6 +74,8 @@ static void __default_unexpected_handler( int vector, int code ){
 **		are not handling (yet).  Just reset the PIC and return.
 */
 static void __default_expected_handler( int vector, int code ){
+	(void)(code);
+
 	if( vector >= 0x20 && vector < 0x30 ){
 		__outb( PIC_MASTER_CMD_PORT, PIC_EOI );
 		if( vector > 0x27 ){
@@ -103,6 +105,8 @@ static void __default_expected_handler( int vector, int code ){
 **		be the famous "spurious level 7 interrupt" source.
 */
 static void __default_mystery_handler( int vector, int code ){
+	(void)(vector);
+	(void)(code);
 
 #ifdef REPORT_MYSTERY_INTS
 	c_printf( "\nMystery interrupt!\nVector=0x%02x, code=%d\n",
@@ -161,10 +165,10 @@ static void init_pic( void ){
 static void set_idt_entry( int entry, void ( *handler )( void ) ){
 	IDT_Gate *g = (IDT_Gate *)IDT_ADDRESS + entry;
 
-	g->offset_15_0 = (int)handler & 0xffff;
+	g->offset_15_0 = (int)(unsigned long)handler & 0xffff;
 	g->segment_selector = 0x0010;
-	g->flags = IDT_PRESENT | IDT_DPL_0 | IDT_INT32_GATE;
-	g->offset_31_16 = (int)handler >> 16 & 0xffff;
+	g->flags = (unsigned short)(IDT_PRESENT | IDT_DPL_0 | IDT_INT32_GATE);
+	g->offset_31_16 = (int)(unsigned long)handler >> 16 & 0xffff;
 }
 
 

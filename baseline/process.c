@@ -54,7 +54,7 @@ uint32_t _system_active;	// # of allocated PCBs
 */
 
 void _pcb_modinit( void ) {
-	
+
 	// allocate and clear the free PCB queue
 
 	if( _queue_alloc(&_free_pcbs,1) != 1 ||
@@ -63,13 +63,13 @@ void _pcb_modinit( void ) {
 	}
 
 	_queue_init( _free_pcbs, NULL );
-	
+
 	// "free" all the PCBs
 
 	for( int i = 0; i < N_PCBS; ++i ) {
 		_pcb_dealloc( &_pcbs[i] );
 	}
-	
+
 	// set the initial PID
 	// (must be the PID of the init() process)
 
@@ -113,7 +113,7 @@ pcb_t *_pcb_alloc( void ) {
 */
 
 void _pcb_dealloc( pcb_t *pcb ) {
-	
+
 	// sanity check:  avoid deallocating a NULL pointer
 	if( pcb == NULL ) {
 		// should this be an error?

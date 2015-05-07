@@ -30,7 +30,7 @@
 ** Types
 **
 ** Our queues are generic, self-ordering queues.  Each queue has an
-** associated ordering routine which is used by the insertion 
+** associated ordering routine which is used by the insertion
 ** routine to order the queue elements.  This allows us to have
 ** different sorting criteria for different queues, but manage them
 ** with one set of functions.
@@ -93,7 +93,7 @@ void _queue_dealloc( queue_t queue );
 /*
 ** _queue_init(que,fcn)
 **
-** initialize the specified queue 
+** initialize the specified queue
 */
 
 void _queue_init( queue_t que, comparef_t fcn );

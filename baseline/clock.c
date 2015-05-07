@@ -60,6 +60,9 @@ uint32_t _system_time;		// the current system time
 */
 
 static void _clock_isr( int vector, int code ) {
+	(void)(vector);
+	(void)(code);
+
 	pcb_t *pcb;
 
 	// spin the pinwheel
@@ -99,7 +102,7 @@ static void _clock_isr( int vector, int code ) {
 		// and schedule it for dispatch
 		_schedule( pcb );
 	}
-	
+
 	// check the current process to see if it needs to be scheduled
 
 	// sanity check!

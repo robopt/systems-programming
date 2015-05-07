@@ -54,21 +54,21 @@ CPP = cpp
 CPPFLAGS = $(USER_OPTIONS) -nostdinc $(INCLUDES)
 
 CC = gcc
-CFLAGS = -m32 -std=c99 -fno-stack-protector -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
+CFLAGS = -m32 -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
 
-AS = as
+AS = as -Wall
 ASFLAGS = --32
 
 LD = ld
 LDFLAGS = -melf_i386
 
-#		
+#
 # Transformation rules - these ensure that all compilation
 # flags that are necessary are specified
 #
 # Note use of 'cpp' to convert .S files to temporary .s files: this allows
 # use of #include/#define/#ifdef statements. However, the line numbers of
-# error messages reflect the .s file rather than the original .S file. 
+# error messages reflect the .s file rather than the original .S file.
 # (If the .s file already exists before a .S file is assembled, then
 # the temporary .s file is not deleted.  This is useful for figuring
 # out the line numbers of error messages, but take care not to accidentally
@@ -123,10 +123,7 @@ SOURCES = $(BOOT_SRC) $(S_SRC) $(C_SRC)
 #
 
 usb.image: bootstrap.b prog.b prog.nl prog.nlf BuildImage
-	./BuildImage -d usb -o usb.image -b bootstrap.b prog.b 0x10000
-
-floppy.image: bootstrap.b prog.b prog.nl BuildImage
-	./BuildImage -d floppy -o floppy.image -b bootstrap.b prog.b 0x10000
+	./BuildImage -o usb.image -b bootstrap.b prog.b 0x10000
 
 prog.out: $(OBJECTS)
 	$(LD) $(LDFLAGS) -o prog.out $(OBJECTS)
@@ -141,10 +138,6 @@ prog.b:	prog.o
 # Targets for copying bootable image onto boot devices
 #
 
-floppy:	floppy.image
-	/usr/local/dcs/bin/fcopy floppy.image
-#	old:  dd if=floppy.image of=/dev/fd0
-
 usb:	usb.image
 	/usr/local/dcs/bin/dcopy usb.image
 #	old:  dd if=usb.image of=/local/devices/disk
@@ -157,7 +150,7 @@ usb:	usb.image
 #
 
 BuildImage:	BuildImage.c
-	$(CC) -o BuildImage BuildImage.c
+	$(CC) -Wall -Wextra -std=gnu99 -o BuildImage BuildImage.c
 
 #
 # won't compile on 14.04 x86_64 due to missing sys/cdefs.h file

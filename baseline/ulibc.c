@@ -69,7 +69,7 @@ int32_t spawn( void (*entry)(void) ) {
 
 static char *itos10x( char *buf, int value ) {
 	int quotient;
-	
+
 	quotient = value / 10;
 	if( quotient < 0 ) {
 		quotient = 214748364;
@@ -83,7 +83,7 @@ static char *itos10x( char *buf, int value ) {
 	*buf++ = value % 10 + '0';
 	return( buf );
 }
-		
+
 
 int itos10( char *buf, int value ) {
 	char *bp = buf;
