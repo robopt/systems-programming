@@ -14,12 +14,12 @@
 #define	__SP_ASM__
 
 /*
-** _get_ebp - return current contents of EBP at the time of the call
+** _get_rbp - return current contents of RBP at the time of the call
 **
 ** Could be used, e.g., by _kpanic to print a traceback
 */
 
-	.globl	_get_ebp
-_get_ebp:
-	movl	%ebp, %eax
+	.globl	_get_rbp
+_get_rbp:
+	movq	%rbp, %rax
 	ret

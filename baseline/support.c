@@ -41,6 +41,8 @@ typedef struct	{
 	short	segment_selector;
 	short	flags;
 	short	offset_31_16;
+	short	offset_63_32;
+	short	reserved;
 } IDT_Gate;
 
 /*
@@ -91,6 +93,24 @@ static void __default_expected_handler( int vector, int code ){
 		__panic( "Unexpected \"expected\" interrupt!" );
 	}
 }
+
+/*
+** Name:	__default_pagefault_handler
+**
+** Arguments:	The usual ISR arguments
+**
+** Returns:	The usual ISR return value
+**
+** Description: Default handler for a page fault through vector 0x0e; displays
+**		a more helpful message than the default.
+*/
+static void __default_pagefault_handler( int vector, int code ){
+	(void)(vector);
+	(void)(code);
+
+	__panic( "Unexpected page fault" );
+}
+
 
 /*
 ** Name:	__default_mystery_handler
@@ -169,6 +189,7 @@ static void set_idt_entry( int entry, void ( *handler )( void ) ){
 	g->segment_selector = 0x0010;
 	g->flags = (unsigned short)(IDT_PRESENT | IDT_DPL_0 | IDT_INT32_GATE);
 	g->offset_31_16 = (int)(unsigned long)handler >> 16 & 0xffff;
+	g->offset_63_32 = (int)(unsigned long)handler & (0x00000000ffffffff);
 }
 
 
@@ -197,9 +218,10 @@ static void init_idt( void ){
 	/*
 	** Install the handlers for interrupts that have a specific handler.
 	*/
-	__install_isr( INT_VEC_KEYBOARD, __default_expected_handler );
-	__install_isr( INT_VEC_TIMER,    __default_expected_handler );
-	__install_isr( INT_VEC_MYSTERY,  __default_mystery_handler );
+	__install_isr( INT_VEC_KEYBOARD,   __default_expected_handler );
+	__install_isr( INT_VEC_TIMER,      __default_expected_handler );
+	__install_isr( INT_VEC_MYSTERY,    __default_mystery_handler );
+	__install_isr( INT_VEC_PAGE_FAULT, __default_pagefault_handler );
 }
 
 /*

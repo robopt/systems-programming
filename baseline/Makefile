@@ -54,13 +54,16 @@ CPP = cpp
 CPPFLAGS = $(USER_OPTIONS) -nostdinc $(INCLUDES)
 
 CC = gcc
-CFLAGS = -m32 -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
+CFLAGS = -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
+CFLAGS_32 = -m32
 
 AS = as -Wall
-ASFLAGS = --32
+ASFLAGS =
+ASFLAGS_32 = --32
 
 LD = ld
-LDFLAGS = -melf_i386
+LDFLAGS = -melf_x86_64
+LDFLAGS_32 = -melf_i386
 
 #
 # Transformation rules - these ensure that all compilation

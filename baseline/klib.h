@@ -38,12 +38,12 @@
 */
 
 /*
-** _get_ebp - return current contents of EBP at the time of the call
+** _get_rbp - return current contents of RBP at the time of the call
 **
 ** Could be used, e.g., by _kpanic to print a traceback
 */
 
-uint32_t _get_ebp( void );
+uint64_t _get_rbp( void );
 
 /*
 ** _put_char_or_code( ch )
@@ -60,7 +60,7 @@ void _put_char_or_code( int ch );
 ** usage:  _memset( buffer, length, value )
 */
 
-void _memset( register uint8_t *buf, register uint32_t len, register uint8_t value );
+void _memset( register uint8_t *buf, register uint64_t len, register uint8_t value );
 
 /*
 ** _kpanic - kernel-level panic routine

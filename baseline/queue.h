@@ -151,7 +151,7 @@ bool_t _queue_empty( queue_t queue );
 ** return the number of elements in the specified queue
 */
 
-uint32_t _queue_size( queue_t queue );
+uint64_t _queue_size( queue_t queue );
 
 /*
 ** _queue_dump(which,queue)

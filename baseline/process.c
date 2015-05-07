@@ -37,7 +37,7 @@ static queue_t _free_pcbs;	// queue of available PCBs
 
 pcb_t _pcbs[ N_PCBS ];		// all the PCBs in the system
 uint16_t _next_pid;		// next available PID
-uint32_t _system_active;	// # of allocated PCBs
+uint64_t _system_active;	// # of allocated PCBs
 
 /*
 ** PRIVATE FUNCTIONS
@@ -159,7 +159,7 @@ pcb_t *_pcb_find( int16_t pid ) {
 
 void _pcb_dump( const char *which, pcb_t *pcb ) {
 
-	c_printf( "%s @%08x: ", which, (uint32_t) pcb );
+	c_printf( "%s @%08x: ", which, (uint64_t) pcb );
 	if( pcb == NULL ) {
 		c_puts( " NULL???\n" );
 		return;
@@ -189,7 +189,7 @@ void _pcb_dump( const char *which, pcb_t *pcb ) {
 		  pcb->default_quantum, pcb->wakeup );
 
 	c_printf( " context %08x stack %08x\n",
-		  (uint32_t) pcb->context, (uint32_t) pcb->stack );
+		  (uint64_t) pcb->context, (uint64_t) pcb->stack );
 }
 
 /*
@@ -200,21 +200,20 @@ void _pcb_dump( const char *which, pcb_t *pcb ) {
 
 void _context_dump( const char *which, context_t *context ) {
 
-	c_printf( "%s @%08x: ", which, (uint32_t) context );
+	c_printf( "%s @%08x: ", which, (uint64_t) context );
 	if( context == NULL ) {
 		c_puts( " NULL???\n" );
 		return;
 	}
 
-	c_printf( "\n\t ss %08x  gs %08x  fs %08x  es %08x\n",
-		context->ss, context->gs, context->fs, context->es );
-	c_printf( "\t ds %08x edi %08x esi %08x ebp %08x\n",
-		context->ds, context->edi, context->esi, context->ebp );
-	c_printf( "\tesp %08x ebx %08x edx %08x ecx %08x\n",
-		context->esp, context->ebx, context->edx, context->ecx );
-	c_printf( "\teax %08x vec %08x cod %08x eip %08x\n",
-		context->eax, context->vector, context->code, context->eip );
-	c_printf( "\t cs %08x efl %08x\n",
-		context->cs, context->eflags );
-
+	c_printf( "\trsp %08x rbp %08x rdi %08x rsi %08x\n",
+		context->rsp, context->rbp, context->rdi, context->rsi );
+	c_printf( "\trdx %08x rcx %08x  r8 %08x  r9 %08x\n",
+		context->rdx, context->rcx, context->r8, context->r9 );
+	c_printf( "\trax %08x rbx %08x r10 %08x r11 %08x\n",
+		context->rax, context->rbx, context->r10, context->r11 );
+	c_printf( "\tr12 %08x r13 %08x r14 %08x r15 %08x\n",
+		context->r12, context->r13, context->r14, context->r15 );
+	c_printf( "\trip %08x rfl %08x vec %08x cod %08x\n",
+		context->rip, context->rflags, context->vector, context->code );
 }
