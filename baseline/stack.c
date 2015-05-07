@@ -37,7 +37,7 @@ static stack_t _stacks[ N_STACKS ];	// all the stacks in the system
 */
 
 stack_t _system_stack;		// separate stack for the OS itself
-uint32_t *_system_esp;		// OS %ESP value
+uint64_t *_system_rsp;		// OS %ESP value
 
 /*
 ** PRIVATE FUNCTIONS

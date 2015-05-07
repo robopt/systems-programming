@@ -60,7 +60,7 @@ void _put_char_or_code( int ch ) {
 ** usage:  _memset( buffer, length, value )
 */
 
-void _memset( register uint8_t *buf, register uint32_t len, uint8_t value ) {
+void _memset( register uint8_t *buf, register uint64_t len, uint8_t value ) {
 
 	while( len-- ) {
 		*buf++ = value;

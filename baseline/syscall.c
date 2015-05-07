@@ -71,7 +71,7 @@ static void _sys_isr( int vector, int code ) {
 	(void)(vector);
 	(void)(code);
 
-	uint32_t which= _current->context->eax;
+	uint64_t which= _current->context->rax;
 
 	// verify that we were given a legal code
 
@@ -145,8 +145,8 @@ static void _sys_spawnp( pcb_t *pcb ) {
 
 	// farm out all the work to this supporting routine
 
-	new = _create_process( (uint32_t) ARG(1,pcb->context),
-				(uint32_t) ARG(2,pcb->context) );
+	new = _create_process( (void*) ARG(1,pcb->context),
+				(uint64_t) ARG(2,pcb->context) );
 
 	if( new == NULL ) {
 
@@ -181,7 +181,7 @@ static void _sys_spawnp( pcb_t *pcb ) {
 */
 
 static void _sys_sleep( pcb_t *pcb ) {
-	uint32_t sleeptime = (uint32_t) ARG(1,pcb->context);
+	uint64_t sleeptime = (uint64_t) ARG(1,pcb->context);
 
 	// if the desired sleep time is 0, treat this as a yield()
 

@@ -37,14 +37,14 @@
 
 // pinwheel control variables
 
-static uint32_t _pinwheel;	// pinwheel counter
-static uint32_t _pindex;	// index into pinwheel string
+static uint64_t _pinwheel;	// pinwheel counter
+static uint64_t _pindex;	// index into pinwheel string
 
 /*
 ** PUBLIC GLOBAL VARIABLES
 */
 
-uint32_t _system_time;		// the current system time
+uint64_t _system_time;		// the current system time
 
 /*
 ** PRIVATE FUNCTIONS
@@ -86,7 +86,7 @@ static void _clock_isr( int vector, int code ) {
 	*/
 
 	while( !_queue_empty(_sleeping) &&
-	       (uint32_t) _queue_kpeek(_sleeping) <= _system_time ) {
+	       (uint64_t) _queue_kpeek(_sleeping) <= _system_time ) {
 
 		// time to wake up!  remove it from the queue
 		pcb = (pcb_t *) _queue_remove( _sleeping );
@@ -145,7 +145,7 @@ static void _clock_isr( int vector, int code ) {
 */
 
 void _clock_modinit( void ) {
-	uint32_t divisor;
+	uint64_t divisor;
 
 	// start the pinwheel
 

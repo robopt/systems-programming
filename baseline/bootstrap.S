@@ -386,6 +386,11 @@ finish:
 	movl	$PML4T_ADDRESS, %edx	/* set PML4T pointer */
 	movl	%edx, %cr3
 
+	movl	$0xC0000080, %ecx	/* get current EFER MSR */
+	rdmsr
+	orl	$0x00000100, %eax	/* set LME bit */
+	wrmsr				/* and store it back */
+
 	movl	%cr0, %eax		/* get current CR0 */
 	orl	$0x80000001, %eax	/* set the PE bit and the PG bit */
 	movl	%eax, %cr0		/* and store it back */
@@ -399,6 +404,8 @@ finish:
 	** and CS with the proper values so that when we land at the
 	** destination address in protected mode, the next instruction
 	** fetch doesn't cause a fault.
+	**
+	** After this point, we should be in full long mode.
 	**
 	** The old code for this:
 	**

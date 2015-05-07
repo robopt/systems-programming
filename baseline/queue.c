@@ -50,7 +50,7 @@ struct queue {
 	qnode_t *first;		// head pointer
 	qnode_t *last;		// tail pointer
 	comparef_t compare;	// comparison function
-	uint32_t size;		// queue length
+	uint64_t size;		// queue length
 };
 
 /*
@@ -78,8 +78,8 @@ static struct queue _queues[N_QUEUES];	// all available queues
 */
 
 int _compare_time( void *qn1, void *qn2 ) {
-	uint32_t k1 = (uint32_t) qn1;
-	uint32_t k2 = (uint32_t) qn2;
+	uint64_t k1 = (uint64_t) qn1;
+	uint64_t k2 = (uint64_t) qn2;
 
 	return( k1 - k2 );
 }
@@ -348,7 +348,7 @@ bool_t _queue_empty( queue_t queue ) {
 ** return the number of elements in the supplied queue
 */
 
-uint32_t _queue_size( queue_t queue ) {
+uint64_t _queue_size( queue_t queue ) {
 	return( queue->size );
 }
 
@@ -415,15 +415,15 @@ void _queue_dump( char *which, queue_t queue ) {
 	}
 
 	c_printf( "first %08x last %08x comp %08x (%d items)\n",
-		  (uint32_t) queue->first, (uint32_t) queue->last,
-		  (uint32_t) queue->compare, queue->size );
+		  (uint64_t) queue->first, (uint64_t) queue->last,
+		  (uint64_t) queue->compare, queue->size );
 
 	if( _queue_size(queue) > 0 ) {
 		c_puts( " data: " );
 		i = 0;
 		for( tmp = queue->first; tmp != NULL; tmp = tmp->next ) {
-			c_printf( " [%x,%x]", (uint32_t) tmp->key,
-				(uint32_t) tmp->data );
+			c_printf( " [%x,%x]", (uint64_t) tmp->key,
+				(uint64_t) tmp->data );
 			if( ++i > 10 ) break;
 		}
 		if( tmp != NULL ) {

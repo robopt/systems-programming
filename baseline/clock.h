@@ -62,7 +62,7 @@
 ** Globals
 */
 
-extern uint32_t	_system_time;	// the current system time
+extern uint64_t	_system_time;	// the current system time
 
 /*
 ** Prototypes
