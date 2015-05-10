@@ -16,12 +16,12 @@
 /*
 ** Search for a device on a certain PCI bus
 */
-uint16_t find_dev_bus(uint8_t bus, uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass );
+uint32_t find_dev_bus(uint8_t bus, uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass );
 
 /*
 ** Enumerate the pci bus looking for a certain device
 */
-uint16_t find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass );
+uint32_t find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass );
 
 /*
 ** Read a Vendor from a certain device
