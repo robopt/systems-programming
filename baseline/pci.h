@@ -7,12 +7,6 @@
 */
 
 
-// Vendor: 8086 - Intel Corporation
-// Device: 1019 - 82547EI Gigabit Ethernet Controller
-// Class: 0x02 - Network Controller
-// Subclass: 0x00 - Ethernet Controller
-
-
 /*
 ** Search for a device on a certain PCI bus
 */
