@@ -11,17 +11,17 @@
 # User supplied files
 #
 U_C_SRC = clock.c klibc.c process.c queue.c scheduler.c sio.c \
-	stack.c syscall.c system.c ulibc.c user.c
+	stack.c syscall.c system.c ulibc.c user.c pci.c net.c
 
 U_C_OBJ = clock.o klibc.o process.o queue.o scheduler.o sio.o \
-	stack.o syscall.o system.o ulibc.o user.o
+	stack.o syscall.o system.o ulibc.o user.o pci.o net.o
 
 U_S_SRC = klibs.S ulibs.S
 
 U_S_OBJ = klibs.o ulibs.o
 
 U_H_SRC = clock.h klib.h process.h queue.h scheduler.h sio.h \
-	stack.h syscall.h system.h types.h ulib.h user.h
+	stack.h syscall.h system.h types.h ulib.h user.h pci.h net.h
 
 U_LIBS	=
 
@@ -211,6 +211,8 @@ stack.o: common.h stack.h types.h queue.h
 syscall.o: common.h syscall.h process.h types.h clock.h stack.h queue.h
 syscall.o: scheduler.h sio.h support.h startup.h x86arch.h
 system.o: common.h system.h types.h process.h clock.h stack.h bootstrap.h
-system.o: syscall.h sio.h queue.h scheduler.h user.h ulib.h
+system.o: syscall.h sio.h queue.h net.h scheduler.h user.h ulib.h
 ulibc.o: common.h ulib.h types.h process.h clock.h stack.h
 user.o: common.h ulib.h types.h process.h clock.h stack.h user.h c_io.h
+pci.o: pci.h
+net.o: net.h pci.h x86arch.h c_io.h
