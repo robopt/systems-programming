@@ -5,8 +5,10 @@
 ** Enumerates PCI bus looking for devices
 ** Edward Mead
 */
+#include "types.h"
 
-
+#ifndef _pci_h
+#define _pci_h
 /*
 ** Search for a device on a certain PCI bus
 */
@@ -52,3 +54,4 @@ uint16_t pci_read_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
 ** Read an int from a certain bus, device, function, and offset
 */
 uint32_t pci_read_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
+#endif
