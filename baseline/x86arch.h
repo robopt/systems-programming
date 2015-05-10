@@ -275,6 +275,8 @@
 #define	INT_VEC_MYSTERY			0x27
 #define	INT_VEC_MOUSE			0x2c
 
+#define INT_VEC_NETWORK         0x2d
+
 /*
 ** Hardware timer (Intel 8254 Programmable Interval Timer)
 */
