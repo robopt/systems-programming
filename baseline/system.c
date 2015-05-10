@@ -20,6 +20,7 @@
 #include "bootstrap.h"
 #include "syscall.h"
 #include "sio.h"
+#include "net.h"
 #include "scheduler.h"
 
 // need address of the initial user process
@@ -182,6 +183,8 @@ void _init( void ) {
 	_sio_modinit();
 	_sys_modinit();
 	_clock_modinit();
+    _net_modinit();
+	_kpanic( "_init", "_net_modinit finished" );
 
 	c_puts( "\n" );
 
