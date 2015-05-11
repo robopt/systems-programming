@@ -9,6 +9,33 @@
 
 #ifndef _pci_h
 #define _pci_h
+
+
+#define PCI_MAX_BUS 256
+#define PCI_MAX_DEV 32
+#define PCI_MAX_FUNC 8
+/*
+** PCI Config Offsets
+** Taken from: https://github.com/scialex/reenix/blob/vfs/kernel/include/drivers/pci.h
+*/
+#define PCI_VENDOR_ID   0x00
+#define PCI_DEVICE_ID   0x02
+#define PCI_COMMAND     0x04
+#define PCI_STATUS      0x06
+#define PCI_REVISION    0x08
+#define PCI_CLASS       0x0B
+#define PCI_SUBCLASS    0x0A
+#define PCI_INTERFACE   0x09
+#define PCI_HEADERTYPE  0x0E
+#define PCI_BAR0        0x10
+#define PCI_BAR1        0x14
+#define PCI_BAR2        0x18
+#define PCI_BAR3        0x1C
+#define PCI_BAR4        0x20
+#define PCI_BAR5        0x24
+#define PCI_CAPLIST     0x34
+#define PCI_IRQLINE     0x3C
+
 /*
 ** Search for a device on a certain PCI bus
 */
@@ -22,22 +49,22 @@ uint32_t find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subcl
 /*
 ** Read a Vendor from a certain device
 */
-uint16_t pci_read_vendor(uint8_t bus, uint8_t dev);
+uint16_t pci_read_vendor(uint8_t bus, uint8_t dev, uint8_t func);
 
 /*
 ** Read a Device ID from a certain device
 */
-uint16_t pci_read_device(uint8_t bus, uint8_t dev);
+uint16_t pci_read_device(uint8_t bus, uint8_t dev, uint8_t func);
 
 /*
 ** Read a Class from a certain device
 */
-uint8_t pci_read_class(uint8_t bus, uint8_t dev);
+uint8_t pci_read_class(uint8_t bus, uint8_t dev, uint8_t func);
 
 /*
 ** Read a Subclass from a certain device
 */
-uint8_t pci_read_subclass(uint8_t bus, uint8_t dev);
+uint8_t pci_read_subclass(uint8_t bus, uint8_t dev, uint8_t func);
 
 
 /*
