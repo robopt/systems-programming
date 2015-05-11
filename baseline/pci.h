@@ -36,6 +36,28 @@
 #define PCI_CAPLIST     0x34
 #define PCI_IRQLINE     0x3C
 
+typedef struct pci_dev_s {
+    uint32_t address;
+    uint8_t bus;
+    uint8_t device;
+    uint8_t func;
+    uint16_t vendorid;
+    uint16_t deviceid;
+    uint8_t classid;
+    uint8_t subclassid;
+    uint8_t headertype;
+    uint8_t irq;
+} pcidev;
+
+pcidev pci_devs[256];
+uint8_t pci_dev_count;
+
+/*
+** Initialize the PCI bus, discover all devices
+*/
+void _pci_modinit(void);
+
+
 /*
 ** Search for a device on a certain PCI bus
 */
@@ -49,23 +71,50 @@ uint32_t find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subcl
 /*
 ** Read a Vendor from a certain device
 */
-uint16_t pci_read_vendor(uint8_t bus, uint8_t dev, uint8_t func);
+uint16_t _pci_read_vendorid(uint8_t bus, uint8_t dev, uint8_t func);
+uint16_t pci_read_vendorid(pcidev device);
 
 /*
 ** Read a Device ID from a certain device
 */
-uint16_t pci_read_device(uint8_t bus, uint8_t dev, uint8_t func);
+uint16_t _pci_read_deviceid(uint8_t bus, uint8_t dev, uint8_t func);
+uint16_t pci_read_deviceid(pcidev device);
+
+/*
+** Read Command Register from a certain device
+*/
+uint16_t _pci_read_command(uint8_t bus, uint8_t dev, uint8_t func);
+uint16_t pci_read_command(pcidev device);
+
+/*
+** Read Status Register from a certain device
+*/
+uint16_t _pci_read_status(uint8_t bus, uint8_t dev, uint8_t func);
+uint16_t pci_read_status(pcidev device);
+
+/*
+** Read a HeaderType from a certain device
+*/
+uint8_t _pci_read_headertype(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t pci_read_headertype(pcidev device);
 
 /*
 ** Read a Class from a certain device
 */
-uint8_t pci_read_class(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t _pci_read_classid(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t pci_read_classid(pcidev device);
 
 /*
 ** Read a Subclass from a certain device
 */
-uint8_t pci_read_subclass(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t _pci_read_subclassid(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t pci_read_subclassid(pcidev device);
 
+/*
+** Read IRQ line from a certain device
+*/
+uint8_t _pci_read_irq(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t pci_read_irq(pcidev device);
 
 /*
 ** Read a byte from a certain bus, device, function, and offset
@@ -81,4 +130,10 @@ uint16_t pci_read_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
 ** Read an int from a certain bus, device, function, and offset
 */
 uint32_t pci_read_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
+
+/*
+** Calculate the address for a certain device
+*/
+uint32_t pci_calc_address(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
+
 #endif
