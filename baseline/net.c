@@ -1,6 +1,7 @@
 #include "net.h"
 #include "pci.h"
 #include "x86arch.h"
+#include "support.h"
 
 #define _net_debug_
 #ifdef _net_debug_
@@ -26,18 +27,11 @@ int _net_modinit() {
     // Device: 1229 - 82557, 82558, 82559
     // Class:  0x02 - Network Controller
     // SubCls: 0x00 - Ethernet Controller
-    uint32_t dev_addr = find_dev((uint16_t)8086, (uint16_t)1019, (uint8_t)0x02, (uint8_t)0x00);
+    uint32_t dev_addr = find_dev((uint16_t)0x8086, (uint16_t)0x1229, (uint8_t)0x02, (uint8_t)0x00);
 #   ifdef _net_debug_
-    c_puts("[net.c][net_init]: find_dev(8086, 1019, 0x02, 0x00) = ");
+    c_puts("[net.c][net_init]: find_dev(0x8086, 0x1229, 0x02, 0x00) = ");
     c_printf("%d \n", dev_addr);
 #   endif
-    if ( !dev_addr ) {
-        dev_addr = find_dev(8086,1229, 0x02, 0x00);
-#       ifdef _net_debug_
-        c_puts("[net.c][net_init]: find_dev(8086, 1229, 0x02, 0x00) = ");
-        c_printf("%d \n", dev_addr);
-#       endif
-    }
 
     __install_isr( INT_VEC_NETWORK, net_isr);
 }
