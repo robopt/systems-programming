@@ -124,16 +124,16 @@ SOURCES = $(BOOT_SRC) $(S_SRC) $(C_SRC)
 #
 
 usb.image: bootstrap.b prog.b prog.nl prog.nlf BuildImage
-	./BuildImage -o usb.image -b bootstrap.b prog.b 0x10000
+	./BuildImage -o usb.image -b bootstrap.b prog.b 0x100000
 
 prog.out: $(OBJECTS)
 	$(LD) $(LDFLAGS) -o prog.out $(OBJECTS)
 
 prog.o:	$(OBJECTS)
-	$(LD) $(LDFLAGS) -o prog.o -Ttext 0x10000 $(OBJECTS) $(U_LIBS)
+	$(LD) $(LDFLAGS) -o prog.o -Ttext 0x100000 $(OBJECTS) $(U_LIBS)
 
 prog.b:	prog.o
-	$(LD) $(LDFLAGS) -o prog.b -s --oformat binary -Ttext 0x10000 prog.o
+	$(LD) $(LDFLAGS) -o prog.b -s --oformat binary -Ttext 0x100000 prog.o
 
 #
 # Targets for copying bootable image onto boot devices
