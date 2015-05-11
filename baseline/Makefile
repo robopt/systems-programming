@@ -147,7 +147,6 @@ floppy:	floppy.image
 
 usb:	usb.image
 	/usr/local/dcs/bin/dcopy usb.image
-#	old:  dd if=usb.image of=/local/devices/disk
 
 #
 # Special rule for creating the modification and offset programs
@@ -190,6 +189,9 @@ prog.nlf: prog.o
 
 depend:
 	makedepend $(INCLUDES) $(SOURCES)
+
+rsync:
+	rsync -avz -e ssh . dsl:~/csc452/final
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
