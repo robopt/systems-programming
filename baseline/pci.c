@@ -17,7 +17,7 @@
 
 void _pci_modinit(){
     pci_dev_count = 0;
-    for ( uint16_t b = 0; b <= PCI_MAX_BUS; ++b ) {
+    for ( uint16_t b = 0; b < PCI_MAX_BUS; ++b ) {
         for (uint8_t d = 0; d < PCI_MAX_DEV; ++d ) {
             uint16_t vendor = _pci_read_vendorid(b, d, 0);
             if (vendor != 0xFFFF) {
@@ -32,6 +32,7 @@ void _pci_modinit(){
                     pci_devs[pci_dev_count].headertype = _pci_read_headertype(b, d, f);
                     pci_devs[pci_dev_count].classid = _pci_read_classid(b, d, f);
                     pci_devs[pci_dev_count].subclassid = _pci_read_subclassid(b, d, f);
+                    pci_devs[pci_dev_count].irq = _pci_read_irq(b, d, f);
 #                   ifdef _pci_debug_
                     c_printf("[pci.c][_pci_modinit]: Device Found. VendorID: %x, DeviceID: %x, ClassID: %x\n", 
                             pci_devs[pci_dev_count].vendorid, pci_devs[pci_dev_count].deviceid, 
@@ -43,6 +44,9 @@ void _pci_modinit(){
             }
         }
     }
+#   ifdef _pci_debug_
+    c_printf("[pci.c][_pci_modinit]: Load Complete. Devices Found: %d\n", pci_dev_count);
+#   endif
 }
 
 
@@ -55,7 +59,7 @@ void _pci_modinit(){
 ** Param [ subclass ]: Subclass to search for
 ** Returns device numb or -1 if not found.
 */
-uint32_t find_dev_bus(uint8_t bus, uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass ) {
+/*uint32_t find_dev_bus(uint8_t bus, uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass ) {
 
     // Iterate over all 32 devices
     for ( uint8_t d = 0; d < PCI_MAX_DEV; ++d ) {
@@ -96,20 +100,31 @@ uint32_t find_dev_bus(uint8_t bus, uint16_t vendor, uint16_t device, uint8_t cla
         }
     }
     return 0;
-}
+}*/
 
 /*
 ** Enumerate the pci bus looking for a certain device
 ** 
 */
-uint32_t find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass ) {
-    uint32_t result = 0;
-    for ( uint16_t b = 0; b <= PCI_MAX_BUS && result == 0; ++b ) {
-        result = find_dev_bus(b,vendor,device,class,subclass);
+pcidev *find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass ) {
+    for ( uint16_t i = 0; i < pci_dev_count; ++i ) {
+        pcidev dev = pci_devs[i];
+        if (dev.vendorid == vendor &&
+                dev.deviceid == device &&
+                dev.classid == class &&
+                dev.subclassid == subclass) {
+#           ifdef _pci_debug_ 
+            c_printf("[pci.c][find_dev] Device found! Vendor: %x, Device: %x, Class: %x, Subclass: %x\n", vendor, device, class, subclass);
+#           endif            
+            return &pci_devs[i];
+        }
     }
-    return ( result );
+    return ( 0 );
 }
 
+uint16_t pci_device_count(){
+    return pci_dev_count;
+}
 
 uint16_t _pci_read_vendorid(uint8_t bus, uint8_t dev, uint8_t func) {
     return ( pci_read_w(bus, dev, func, PCI_VENDOR_ID) );
