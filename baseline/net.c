@@ -16,6 +16,7 @@ int rx_buf_cur;
 int tx_buf_index;
 int tx_buf_cur;
 
+pcidev *netdev;
 
 /*
 ** Initialize
@@ -27,15 +28,20 @@ int _net_modinit() {
     // Device: 1229 - 82557, 82558, 82559
     // Class:  0x02 - Network Controller
     // SubCls: 0x00 - Ethernet Controller
-    pcidev *dev = find_dev(0x8086, 0x1229, 0x02, 0x00);
+    netdev = find_dev(0x8086, 0x1229, 0x02, 0x00);
+    if (netdev == (void*)0) {
+        return -1;
+    }
 #   ifdef _net_debug_
-    c_printf("[net.c][net_init]: Intel 8255x Device @= %x, irq: %d \n", dev->address, dev->irq);
+    c_printf("[net.c][net_init]: Intel 8255x @= %x, irq: %x, Bar0: %x\n", netdev->address, netdev->irq, netdev->bar0);
 #   endif
 
+    uint32_t vector = 0x68 + netdev->irq;
 #   ifdef _net_debug_
-    c_printf("[net.c][net_init]: Registering ISR on Vector: %x \n", 0x68 + dev->irq);
+    c_printf("[net.c][net_init]: Registering ISR on Vector: %x \n", 0x68 + vector);
 #   endif
-    __install_isr( INT_VEC_NETWORK, 0x68 + dev->irq);
+
+    __install_isr( vector, net_isr );
     return 0;
 }
 
