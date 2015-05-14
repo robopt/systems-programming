@@ -21,6 +21,7 @@
 #include "syscall.h"
 #include "sio.h"
 #include "net.h"
+#include "ata.h"
 #include "pci.h"
 #include "scheduler.h"
 
@@ -186,6 +187,7 @@ void _init( void ) {
 	_clock_modinit();
     _pci_modinit();
     _net_modinit();
+    _ata_modinit();
 	_kpanic( "_init", "_net_modinit finished" );
 
 	c_puts( "\n" );
