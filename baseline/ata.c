@@ -8,6 +8,10 @@
 #include "c_io.h"
 #endif
 
+unsigned char ide_buf[2048] = {0};
+unsigned char ide_irq_invoked = 0;
+unsigned char atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 int _ata_modinit() {
     // Slot:        00:1f.1
 
@@ -42,7 +46,7 @@ int _ata_modinit() {
 unsigned char ide_read_reg(unsigned char channel, unsigned char reg) {
     unsigned char result = 0;
     if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, REG_DRIVECTRL, 0x80 | channels[channel].nIEN);
+        ide_write_reg(channel, REG_DRIVECTRL, 0x80 | channels[channel].nIEN);
     if (reg < 0x08)
         result = __inb(channels[channel].base + reg - 0x00);
     else if (reg < 0x0C)
@@ -52,13 +56,13 @@ unsigned char ide_read_reg(unsigned char channel, unsigned char reg) {
     else if (reg < 0x16)
         result = __inb(channels[channel].bmide + reg - 0x0E);
     if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, REG_DRIVECTRL, channels[channel].nIEN);
+        ide_write_reg(channel, REG_DRIVECTRL, channels[channel].nIEN);
     return result;
 }
 
 void ide_write_reg(unsigned char channel, unsigned char reg, unsigned char data) {
     if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, REG_DRIVECTRL, 0x80 | channels[channel].nIEN);
+        ide_write_reg(channel, REG_DRIVECTRL, 0x80 | channels[channel].nIEN);
     if (reg < 0x08)
         __outb(channels[channel].base  + reg - 0x00, data);
     else if (reg < 0x0C)
@@ -68,7 +72,7 @@ void ide_write_reg(unsigned char channel, unsigned char reg, unsigned char data)
     else if (reg < 0x16)
         __outb(channels[channel].bmide + reg - 0x0E, data);
     if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, REG_DRIVECTRL, channels[channel].nIEN);
+        ide_write_reg(channel, REG_DRIVECTRL, channels[channel].nIEN);
 }
 
 void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer,
@@ -78,19 +82,19 @@ void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buff
      *           assembly blocks.
      */
     if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, REG_DRIVECTRL, 0x80 | channels[channel].nIEN);
+        ide_write_reg(channel, REG_DRIVECTRL, 0x80 | channels[channel].nIEN);
     __asm("pushw %es; movw %ds, %ax; movw %ax, %es");
     if (reg < 0x08)
-        __insl(channels[channel].base  + reg - 0x00, buffer, quads);
+        __inl(channels[channel].base  + reg - 0x00, buffer, quads);
     else if (reg < 0x0C)
-        __insl(channels[channel].base  + reg - 0x06, buffer, quads);
+        __inl(channels[channel].base  + reg - 0x06, buffer, quads);
     else if (reg < 0x0E)
-        __insl(channels[channel].control + reg - 0x0A, buffer, quads);
+        __inl(channels[channel].control + reg - 0x0A, buffer, quads);
     else if (reg < 0x16)
-        insl(channels[channel].bmide + reg - 0x0E, buffer, quads);
+        __inl(channels[channel].bmide + reg - 0x0E, buffer, quads);
     __asm("popw %es;");
     if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, REG_DRIVECTRL, channels[channel].nIEN);
+        ide_write_reg(channel, REG_DRIVECTRL, channels[channel].nIEN);
 }
 
 unsigned char ide_polling(unsigned char channel, unsigned int advanced_check) {
@@ -134,21 +138,21 @@ unsigned char ide_print_error(unsigned int drive, unsigned char err) {
     if (err == 0)
         return err;
 
-    printf("IDE:");
-    if (err == 1) {printf("- Device Fault\n     "); err = 19;}
+    c_printf("IDE:");
+    if (err == 1) {c_printf("- Device Fault\n     "); err = 19;}
     else if (err == 2) {
         unsigned char st = ide_read_reg(ide_devices[drive].channel, REG_ERROR);
-        if (st & ER_NDAM)   {printf("- No Address Mark Found\n     ");   err = 7;}
-        if (st & ER_NTK0)   {printf("- No Media or Media Error\n     ");   err = 3;}
-        if (st & ER_ABRT)   {printf("- Command Aborted\n     ");      err = 20;}
-        if (st & ER_MCR)   {printf("- No Media or Media Error\n     ");   err = 3;}
-        if (st & ER_IDNF)   {printf("- ID mark not Found\n     ");      err = 21;}
-        if (st & ER_MC)   {printf("- No Media or Media Error\n     ");   err = 3;}
-        if (st & ER_UNC)   {printf("- Uncorrectable Data Error\n     ");   err = 22;}
-        if (st & ER_BBK)   {printf("- Bad Sectors\n     ");       err = 13;}
-    } else  if (err == 3)           {printf("- Reads Nothing\n     "); err = 23;}
-    else  if (err == 4)  {printf("- Write Protected\n     "); err = 8;}
-    printf("- [%s %s] %s\n",
+        if (st & ER_NDAM)   {c_printf("- No Address Mark Found\n     ");   err = 7;}
+        if (st & ER_NTK0)   {c_printf("- No Media or Media Error\n     ");   err = 3;}
+        if (st & ER_ABRT)   {c_printf("- Command Aborted\n     ");      err = 20;}
+        if (st & ER_MCR)   {c_printf("- No Media or Media Error\n     ");   err = 3;}
+        if (st & ER_IDNF)   {c_printf("- ID mark not Found\n     ");      err = 21;}
+        if (st & ER_MC)   {c_printf("- No Media or Media Error\n     ");   err = 3;}
+        if (st & ER_UNC)   {c_printf("- Uncorrectable Data Error\n     ");   err = 22;}
+        if (st & ER_BBK)   {c_printf("- Bad Sectors\n     ");       err = 13;}
+    } else  if (err == 3)           {c_printf("- Reads Nothing\n     "); err = 23;}
+    else  if (err == 4)  {c_printf("- Write Protected\n     "); err = 8;}
+    c_printf("- [%s %s] %s\n",
             (const char *[]){"Primary", "Secondary"}[ide_devices[drive].channel], // Use the channel as an index into the array
             (const char *[]){"Master", "Slave"}[ide_devices[drive].drive], // Same as above, using the drive
             ide_devices[drive].model);
@@ -170,8 +174,8 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
     channels[ATA_SLAVE].bmide = (BAR4 & 0xFFFFFFFC) + 8; // Bus Master IDE
 
     // 2- Disable IRQs:
-    ide_write(ATA_MASTER  , REG_DRIVECTRL, 2);
-    ide_write(ATA_SLAVE, REG_DRIVECTRL, 2);
+    ide_write_reg(ATA_MASTER  , REG_DRIVECTRL, 2);
+    ide_write_reg(ATA_SLAVE, REG_DRIVECTRL, 2);
 
     // 3- Detect ATA-ATAPI Devices:
     for (i = 0; i < 2; i++)
@@ -181,19 +185,19 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
             ide_devices[count].reserved = 0; // Assuming that no drive here.
 
             // (I) Select Drive:
-            ide_write(i, REG_DRIVEHEAD, 0xA0 | (j << 4)); // Select Drive.
-            sleep(1); // Wait 1ms for drive select to work.
+            ide_write_reg(i, REG_DRIVEHEAD, 0xA0 | (j << 4)); // Select Drive.
+            //sleep(1); // Wait 1ms for drive select to work.
 
             // (II) Send ATA Identify Command:
-            ide_write(i, REG_CMD, CMD_IDENTIFY);
-            sleep(1); // This function should be implemented in your OS. which waits for 1 ms.
+            ide_write_reg(i, REG_CMD, CMD_IDENTIFY);
+            //sleep(1); // This function should be implemented in your OS. which waits for 1 ms.
             // it is based on System Timer Device Driver.
 
             // (III) Polling:
-            if (ide_read(i, REG_STATUS) == 0) continue; // If Status = 0, No Device.
+            if (ide_read_reg(i, REG_STATUS) == 0) continue; // If Status = 0, No Device.
 
             while(1) {
-                status = ide_read(i, REG_STATUS);
+                status = ide_read_reg(i, REG_STATUS);
                 if ((status & SR_ERR)) {err = 1; break;} // If Err, Device is not ATA.
                 if (!(status & SR_BSY) && (status & SR_DRQ)) break; // Everything is right.
             }
@@ -201,8 +205,8 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
             // (IV) Probe for ATAPI Devices:
 
             if (err != 0) {
-                unsigned char cl = ide_read(i, REG_LBA1);
-                unsigned char ch = ide_read(i, REG_LBA2);
+                unsigned char cl = ide_read_reg(i, REG_LBA1);
+                unsigned char ch = ide_read_reg(i, REG_LBA2);
 
                 if (cl == 0x14 && ch ==0xEB)
                     type = IDE_ATAPI;
@@ -211,8 +215,8 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
                 else
                     continue; // Unknown Type (may not be a device).
 
-                ide_write(i, REG_CMD, CMD_IDENTIFY_PACKET);
-                sleep(1);
+                ide_write_reg(i, REG_CMD, CMD_IDENTIFY_PACKET);
+                //sleep(1);
             }
 
             // (V) Read Identification Space of the Device:
@@ -223,22 +227,22 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
             ide_devices[count].type         = type;
             ide_devices[count].channel      = i;
             ide_devices[count].drive        = j;
-            ide_devices[count].signature    = *((unsigned short *)(ide_buf + IDENT_DEVICETYPE));
-            ide_devices[count].capabilities = *((unsigned short *)(ide_buf + IDENT_CAPABILITIES));
-            ide_devices[count].commandSets  = *((unsigned int *)(ide_buf + IDENT_COMMANDSETS));
+            ide_devices[count].signature    = *((unsigned short *)(ide_buf + ATA_IDENT_DEVICETYPE));
+            ide_devices[count].capabilities = *((unsigned short *)(ide_buf + ATA_IDENT_CAPABILITIES));
+            ide_devices[count].commandSets  = *((unsigned int *)(ide_buf + ATA_IDENT_COMMANDSETS));
 
             // (VII) Get Size:
             if (ide_devices[count].commandSets & (1 << 26))
                 // Device uses 48-Bit Addressing:
-                ide_devices[count].size   = *((unsigned int *)(ide_buf + IDENT_MAX_LBA_EXT));
+                ide_devices[count].size   = *((unsigned int *)(ide_buf + ATA_IDENT_MAX_LBA_EXT));
             else
                 // Device uses CHS or 28-bit Addressing:
-                ide_devices[count].size   = *((unsigned int *)(ide_buf + IDENT_MAX_LBA));
+                ide_devices[count].size   = *((unsigned int *)(ide_buf + ATA_IDENT_MAX_LBA));
 
             // (VIII) String indicates model of device (like Western Digital HDD and SONY DVD-RW...):
             for(int k = 0; k < 40; k += 2) {
-                ide_devices[count].model[k] = ide_buf[IDENT_MODEL + k + 1];
-                ide_devices[count].model[k + 1] = ide_buf[IDENT_MODEL + k];}
+                ide_devices[count].model[k] = ide_buf[ATA_IDENT_MODEL + k + 1];
+                ide_devices[count].model[k + 1] = ide_buf[ATA_IDENT_MODEL + k];}
             ide_devices[count].model[40] = 0; // Terminate String.
 
             count++;
@@ -247,7 +251,7 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
     // 4- Print Summary:
     for (i = 0; i < 4; i++)
         if (ide_devices[i].reserved == 1) {
-            printf(" Found %s Drive %dGB - %s\n",
+            c_printf(" Found %s Drive %dGB - %s\n",
                     (const char *[]){"ATA", "ATAPI"}[ide_devices[i].type],         /* Type */
                     ide_devices[i].size / 1024 / 1024 / 2,               /* Size */
                     ide_devices[i].model);

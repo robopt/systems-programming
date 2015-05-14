@@ -96,9 +96,9 @@ struct IDEChannelRegisters {
     uint32_t nIEN;      // nIEN (no interrupt)
 } channels[2];
 
-unsigned char ide_buf[2048] = {0};
-unsigned static char ide_irq_invoked = 0;
-unsigned static char atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+extern unsigned char ide_buf[2048];
+extern unsigned char ide_irq_invoked;
+extern unsigned char atapi_packet[12];
 
 struct ide_device {
     unsigned char  reserved;    // 0 (Empty) or 1 (This Drive really exists).
