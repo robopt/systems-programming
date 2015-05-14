@@ -32,6 +32,8 @@ int _ata_modinit() {
     c_printf("[ata.c][_ata_modinit]: IDE Contrller @= %x, irq: %x, Bar0: %x, Bar1: %x, Bar2: %x, Bar3: %x, Bar4 %x\n", ide->address, ide->irq, ide->bar0, ide->bar1, ide->bar2, ide->bar3, ide->bar4);
 #endif
 
+    ide_initialize(0x1f0, 0x3f6, 0x170, 0x376, 0x000);
+
     //uint16_t command = pci_read_command(*ide);
     //// set to 1 to enable busmaster
     //command |= 0x4;
@@ -172,6 +174,8 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
     channels[ATA_SLAVE].control  = (BAR3 & 0xFFFFFFFC) + 0x376 * (!BAR3);
     channels[ATA_MASTER  ].bmide = (BAR4 & 0xFFFFFFFC) + 0; // Bus Master IDE
     channels[ATA_SLAVE].bmide = (BAR4 & 0xFFFFFFFC) + 8; // Bus Master IDE
+
+    //_kpanic("ide init", "set channels");
 
     // 2- Disable IRQs:
     ide_write_reg(ATA_MASTER  , REG_DRIVECTRL, 2);
