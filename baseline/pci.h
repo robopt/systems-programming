@@ -10,7 +10,6 @@
 #ifndef _pci_h
 #define _pci_h
 
-
 #define PCI_MAX_BUS 256
 #define PCI_MAX_DEV 32
 #define PCI_MAX_FUNC 8
@@ -113,8 +112,8 @@ uint16_t pci_read_command(pcidev device);
 /*
 ** Write Command Register from a certain device
 */
-static void _pci_write_command(uint8_t bus, uint8_t dev, uint8_t func, uint8_t val);
-static void pci_write_command(pcidev device, uint8_t val);
+void _pci_write_command(uint8_t bus, uint8_t dev, uint8_t func, uint16_t val);
+void pci_write_command(pcidev device, uint16_t val);
 
 /*
 ** Read Status Register from a certain device
@@ -176,17 +175,17 @@ uint32_t pci_read_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
 /*
 ** Write a byte to a certain bus, device, function, and offset
 */
-static void pci_write_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
+void pci_write_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
 
 /*
 ** Write a word to a certain bus, device, function, and offset
 */
-static void pci_write_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
+void pci_write_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
 
 /*
 ** Write a long to a certain bus, device, function, and offset
 */
-static void pci_write_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
+void pci_write_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
 
 /*
 ** Calculate the address for a certain device
