@@ -14,7 +14,9 @@
 #include "c_io.h"
 #endif
 
-
+/*
+** Initialize all devices on pci bus
+*/
 void _pci_modinit(){
     pci_dev_count = 0;
     for ( uint16_t b = 0; b < PCI_MAX_BUS; ++b ) {
@@ -29,8 +31,13 @@ void _pci_modinit(){
                     pci_devs[pci_dev_count].vendorid = vendor;
                     pci_devs[pci_dev_count].deviceid = _pci_read_deviceid(b, d, f);
                     if ( pci_devs[pci_dev_count].deviceid == 0xFFFF ) continue;
+                    //pci_devs[pci_dev_count].bar0 = _pci_read_bar0(b, d, f) & 0xFFFFFFFC;
                     pci_devs[pci_dev_count].bar0 = _pci_read_bar0(b, d, f);
                     pci_devs[pci_dev_count].bar1 = _pci_read_bar1(b, d, f);
+                    pci_devs[pci_dev_count].bar2 = _pci_read_bar2(b, d, f);
+                    pci_devs[pci_dev_count].bar3 = _pci_read_bar3(b, d, f);
+                    pci_devs[pci_dev_count].bar4 = _pci_read_bar4(b, d, f);
+                    pci_devs[pci_dev_count].bar5 = _pci_read_bar5(b, d, f);
                     pci_devs[pci_dev_count].headertype = _pci_read_headertype(b, d, f);
                     pci_devs[pci_dev_count].classid = _pci_read_classid(b, d, f);
                     pci_devs[pci_dev_count].subclassid = _pci_read_subclassid(b, d, f);
@@ -42,7 +49,6 @@ void _pci_modinit(){
                             pci_devs[pci_dev_count].vendorid, pci_devs[pci_dev_count].deviceid, 
                             pci_devs[pci_dev_count].classid);
 #                   endif
-                    __delay(10);
                     pci_dev_count++;
                 }
             }
@@ -53,58 +59,6 @@ void _pci_modinit(){
 #   endif
 }
 
-
-/*
-** Search for a device on a certain PCI bus
-** Param [ bus ]: Bus to search on
-** Param [ vendor ]: Vendor to search for
-** Param [ device ]: Device to search for
-** Param [ class ]: Class to search for
-** Param [ subclass ]: Subclass to search for
-** Returns device numb or -1 if not found.
-*/
-/*uint32_t find_dev_bus(uint8_t bus, uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass ) {
-
-    // Iterate over all 32 devices
-    for ( uint8_t d = 0; d < PCI_MAX_DEV; ++d ) {
-        // check if vendor is what we are looking for
-        if ( vendor != _pci_read_vendorid(bus, d, 0) ) continue;
-
-        // Iterate over functions since vendor is valid
-        for ( uint8_t f = 0; f < PCI_MAX_FUNC; ++f ) {
-
-#           ifdef _pci_debug_ //print device results
-            uint16_t pci_dev = _pci_read_deviceid(bus, d, f);
-            if (pci_dev != 0xFFFF) {
-                c_printf("[pci.c][find_dev_bus]: Device Read: %x looking for: %x\n",pci_dev, device);
-                __delay(10);
-            }
-#           endif
-            // check device
-            if ( device != pci_dev ) continue;
-
-#           ifdef _pci_debug_ //print device results
-            uint8_t pci_class = _pci_read_classid(bus, d, f);
-            c_printf("[pci.c][find_dev_bus]: Class Read: %x looking for: %x\n",pci_class, class);
-            __delay(10);
-#           endif
-            // check class
-            if ( class != pci_class ) continue;
-
-#           ifdef _pci_debug_ //print device results
-            uint8_t pci_subclass = _pci_read_subclassid(bus, d, f);
-            c_printf("[pci.c][find_dev_bus]: Subclass Read: %x looking for: %x\n",pci_subclass, subclass);
-            __delay(10);
-#           endif
-            // check subclass
-            if ( subclass != pci_subclass ) continue;
-                   
-            return pci_calc_address(bus,d,f,0);
-            //@TODO Create pci object to return instead of address.
-        }
-    }
-    return 0;
-}*/
 
 /*
 ** Enumerate the pci bus looking for a certain device
@@ -135,6 +89,18 @@ uint32_t pci_read_bar0(pcidev device) { return ( pci_read_l(device.bus, device.d
 
 uint32_t _pci_read_bar1(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_l(bus, dev, func, PCI_BAR1) ); }
 uint32_t pci_read_bar1(pcidev device) { return ( pci_read_l(device.bus, device.device, device.func, PCI_BAR1) ); }
+
+uint32_t _pci_read_bar2(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_l(bus, dev, func, PCI_BAR2) ); }
+uint32_t pci_read_bar2(pcidev device) { return ( pci_read_l(device.bus, device.device, device.func, PCI_BAR2) ); }
+
+uint32_t _pci_read_bar3(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_l(bus, dev, func, PCI_BAR3) ); }
+uint32_t pci_read_bar3(pcidev device) { return ( pci_read_l(device.bus, device.device, device.func, PCI_BAR3) ); }
+
+uint32_t _pci_read_bar4(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_l(bus, dev, func, PCI_BAR4) ); }
+uint32_t pci_read_bar4(pcidev device) { return ( pci_read_l(device.bus, device.device, device.func, PCI_BAR4) ); }
+
+uint32_t _pci_read_bar5(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_l(bus, dev, func, PCI_BAR5) ); }
+uint32_t pci_read_bar5(pcidev device) { return ( pci_read_l(device.bus, device.device, device.func, PCI_BAR5) ); }
 
 uint16_t _pci_read_vendorid(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_w(bus, dev, func, PCI_VENDOR_ID) ); }
 uint16_t pci_read_vendorid(pcidev device) { return ( pci_read_w(device.bus, device.device, device.func, PCI_VENDOR_ID) ); }

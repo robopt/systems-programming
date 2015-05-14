@@ -23,6 +23,7 @@
 #define PCI_COMMAND     0x04
 #define PCI_STATUS      0x06
 #define PCI_REVISION    0x08
+#define PCI_PROGIF      0x09
 #define PCI_CLASS       0x0B
 #define PCI_SUBCLASS    0x0A
 #define PCI_INTERFACE   0x09
@@ -38,11 +39,19 @@
 
 typedef struct pci_dev_s {
     uint32_t address;
+    uint32_t bar0;
+    uint32_t bar1;
+    uint32_t bar2;
+    uint32_t bar3;
+    uint32_t bar4;
+    uint32_t bar5;
+    uint16_t vendorid;
+    uint16_t deviceid;
+    uint8_t revision;
+    uint8_t progif;
     uint8_t bus;
     uint8_t device;
     uint8_t func;
-    uint16_t vendorid;
-    uint16_t deviceid;
     uint8_t classid;
     uint8_t subclassid;
     uint8_t headertype;
@@ -68,6 +77,21 @@ uint16_t pci_device_count(void);
 */
 pcidev *find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass );
 
+/*
+** Read a Vendor from a certain device
+*/
+uint32_t _pci_read_bar0(uint8_t bus, uint8_t dev, uint8_t func);
+uint32_t pci_read_bar0(pcidev device);
+uint32_t _pci_read_bar1(uint8_t bus, uint8_t dev, uint8_t func);
+uint32_t pci_read_bar1(pcidev device);
+uint32_t _pci_read_bar2(uint8_t bus, uint8_t dev, uint8_t func);
+uint32_t pci_read_bar2(pcidev device);
+uint32_t _pci_read_bar3(uint8_t bus, uint8_t dev, uint8_t func);
+uint32_t pci_read_bar3(pcidev device);
+uint32_t _pci_read_bar4(uint8_t bus, uint8_t dev, uint8_t func);
+uint32_t pci_read_bar4(pcidev device);
+uint32_t _pci_read_bar5(uint8_t bus, uint8_t dev, uint8_t func);
+uint32_t pci_read_bar5(pcidev device);
 /*
 ** Read a Vendor from a certain device
 */
@@ -97,6 +121,18 @@ uint16_t pci_read_status(pcidev device);
 */
 uint8_t _pci_read_headertype(uint8_t bus, uint8_t dev, uint8_t func);
 uint8_t pci_read_headertype(pcidev device);
+
+/*
+** Read a Class from a certain device
+*/
+uint8_t _pci_read_progif(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t pci_read_progif(pcidev device);
+
+/*
+** Read a Class from a certain device
+*/
+uint8_t _pci_read_revision(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t pci_read_revision(pcidev device);
 
 /*
 ** Read a Class from a certain device
