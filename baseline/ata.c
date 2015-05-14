@@ -38,3 +38,40 @@ int _ata_modinit() {
 
     return 0;
 }
+
+unsigned char ide_read(unsigned char channel, unsigned char reg) {
+    unsigned char result;
+    if (reg > 0x07 && reg < 0x0C)
+        ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
+    if (reg < 0x08)
+        result = inb(channels[channel].base + reg - 0x00);
+    else if (reg < 0x0C)
+        result = inb(channels[channel].base  + reg - 0x06);
+    else if (reg < 0x0E)
+        result = inb(channels[channel].ctrl  + reg - 0x0A);
+    else if (reg < 0x16)
+        result = inb(channels[channel].bmide + reg - 0x0E);
+    if (reg > 0x07 && reg < 0x0C)
+        ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
+    return result;
+}
+
+void ide_write(unsigned char channel, unsigned char reg, unsigned char data) {
+    if (reg > 0x07 && reg < 0x0C)
+        ide_write(channel, REG_CONTROL, 0x80 | channels[channel].nIEN);
+    if (reg < 0x08)
+        outb(channels[channel].base  + reg - 0x00, data);
+    else if (reg < 0x0C)
+        outb(channels[channel].base  + reg - 0x06, data);
+    else if (reg < 0x0E)
+        outb(channels[channel].ctrl  + reg - 0x0A, data);
+    else if (reg < 0x16)
+        outb(channels[channel].bmide + reg - 0x0E, data);
+    if (reg > 0x07 && reg < 0x0C)
+        ide_write(channel, REG_CONTROL, channels[channel].nIEN);
+}
+
+void ide_initialize(uint32_t bar0, uint32_t bar1, uint32_t bar2, uint32_t bar3, uint32_t bar4) {
+    int j, k, count = 0;
+
+
