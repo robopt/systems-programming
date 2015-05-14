@@ -111,6 +111,12 @@ uint16_t _pci_read_command(uint8_t bus, uint8_t dev, uint8_t func);
 uint16_t pci_read_command(pcidev device);
 
 /*
+** Write Command Register from a certain device
+*/
+static void _pci_write_command(uint8_t bus, uint8_t dev, uint8_t func, uint8_t val);
+static void pci_write_command(pcidev device, uint8_t val);
+
+/*
 ** Read Status Register from a certain device
 */
 uint16_t _pci_read_status(uint8_t bus, uint8_t dev, uint8_t func);
@@ -166,6 +172,21 @@ uint16_t pci_read_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
 ** Read an int from a certain bus, device, function, and offset
 */
 uint32_t pci_read_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset);
+
+/*
+** Write a byte to a certain bus, device, function, and offset
+*/
+static void pci_write_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
+
+/*
+** Write a word to a certain bus, device, function, and offset
+*/
+static void pci_write_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
+
+/*
+** Write a long to a certain bus, device, function, and offset
+*/
+static void pci_write_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val);
 
 /*
 ** Calculate the address for a certain device

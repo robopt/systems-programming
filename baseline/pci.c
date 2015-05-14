@@ -111,6 +111,9 @@ uint16_t pci_read_deviceid(pcidev device) { return ( pci_read_w(device.bus, devi
 uint16_t _pci_read_command(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_w(bus, dev, func, PCI_DEVICE_ID) ); }
 uint16_t pci_read_command(pcidev device) { return ( pci_read_w(device.bus, device.device, device.func, PCI_DEVICE_ID) ); }
 
+void _pci_write_command(uint8_t bus, uint8_t dev, uint8_t func, uint8_t val) { ( pci_write_w(bus, dev, func, PCI_DEVICE_ID, (uint8_t) val) ); }
+void pci_write_command(pcidev device, uint8_t val) { ( pci_write_w(device.bus, device.device, device.func, PCI_DEVICE_ID, (uint8_t) val) ); }
+
 uint16_t _pci_read_status(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_w(bus, dev, func, PCI_DEVICE_ID) ); }
 uint16_t pci_read_status(pcidev device) { return ( pci_read_w(device.bus, device.device, device.func, PCI_DEVICE_ID) ); }
 
@@ -176,6 +179,42 @@ uint32_t pci_read_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
     //uint32_t res = (uint32_t)(__inw(0xCFC) & 0xffffffff);
     int32_t res = (uint32_t)(__inl(0xCFC));
     return res;
+}
+
+static void pci_write_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val) {
+    // Write to PCI table and configure devices
+    __outl(0xCF8,
+            0x80000000
+            | (bus << 16)
+            | (dev << 11)
+            | (func << 8)
+            | (offset & 0xfc) );
+
+    __outb(0xCF8 + (offset & 0x03), val);
+}
+
+static void pci_write_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val) {
+    // Write to PCI table and configure devices
+    __outl(0xCF8,
+            0x80000000
+            | (bus << 16)
+            | (dev << 11)
+            | (func << 8)
+            | (offset & 0xfc) );
+
+    __outb(0xCF8, val);
+}
+
+static void pci_write_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val) {
+    // Write to PCI table and configure devices
+    __outl(0xCF8,
+            0x80000000
+            | (bus << 16)
+            | (dev << 11)
+            | (func << 8)
+            | (offset & 0xfc) );
+
+    __outl(0xCF8, val);
 }
 
 uint32_t pci_calc_address(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset){
