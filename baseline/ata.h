@@ -36,9 +36,19 @@
 #define     REG_LBA4        0x0a
 #define     REG_LBA5        0x0b
 
-#define     ASTATUS     0x08    // alternate status     in      BAR1 + 6
-#define     DRIVECTRL   0x08    // device control          out  BAR1 + 6
-#define     DRIVEADDR   0x09    // device address       in      BAR1 + 7
+#define     REG_ALTSTATUS   0x08    // alternate status     in      BAR1 + 6
+#define     REG_DRIVECTRL   0x08    // device control          out  BAR1 + 6
+#define     REG_DRIVEADDR   0x09    // device address       in      BAR1 + 7
+
+// Status
+#define SR_BSY     0x80    // Busy
+#define SR_DRDY    0x40    // Drive ready
+#define SR_DF      0x20    // Drive write fault
+#define SR_DSC     0x10    // Drive seek complete
+#define SR_DRQ     0x08    // Data request ready
+#define SR_CORR    0x04    // Corrected data
+#define SR_IDX     0x02    // Inlex
+#define SR_ERR     0x01    // Error
 
 // Error codes
 #define     ER_ICRC     0x80    // ATA Ultra DMA bad CRC
@@ -91,19 +101,23 @@ unsigned static char ide_irq_invoked = 0;
 unsigned static char atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 struct ide_device {
-    unsigned char  Reserved;    // 0 (Empty) or 1 (This Drive really exists).
-    unsigned char  Channel;     // 0 (Primary Channel) or 1 (Secondary Channel).
-    unsigned char  Drive;       // 0 (Master Drive) or 1 (Slave Drive).
-    unsigned short Type;        // 0: ATA, 1:ATAPI.
-    unsigned short Signature;   // Drive Signature
-    unsigned short Capabilities;// Features.
-    unsigned int   CommandSets; // Command Sets Supported.
-    unsigned int   Size;        // Size in Sectors.
-    unsigned char  Model[41];   // Model in string.
+    unsigned char  reserved;    // 0 (Empty) or 1 (This Drive really exists).
+    unsigned char  channel;     // 0 (Primary Channel) or 1 (Secondary Channel).
+    unsigned char  drive;       // 0 (Master Drive) or 1 (Slave Drive).
+    unsigned short type;        // 0: ATA, 1:ATAPI.
+    unsigned short signature;   // Drive Signature
+    unsigned short capabilities;// Features.
+    unsigned int   commandSets; // Command Sets Supported.
+    unsigned int   size;        // Size in Sectors.
+    unsigned char  model[41];   // Model in string.
 } ide_devices[4];
 
 int _ata_modinit(void);
-unsigned char ide_read(unsigned char channel, unsigned char reg);
-void ide_write(unsigned char channel, unsigned char reg, unsigned char data);
+unsigned char ide_read_reg(unsigned char channel, unsigned char reg);
+void ide_write_reg(unsigned char channel, unsigned char reg, unsigned char data);
+void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads);
+unsigned char ide_polling(unsigned char channel, unsigned int advanced_check);
+void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4);
+
 
 #endif
