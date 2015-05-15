@@ -146,7 +146,7 @@ void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buff
         ide_write(channel, ATA_REG_CONTROL, channels[channel].interrupt);
 }
 
-unsigned char ide_polling(unsigned char channel, unsigned int advanced_check) {
+uint8_t ide_polling(uint8_t channel, uint32_t advanced_check) {
 
     // (I) Delay 400 nanosecond for BSY to be set:
     // -------------------------------------------------
@@ -362,7 +362,7 @@ void dev_summary() {
 
 // We are only going to do 28-bit LBA because we don't need hard drives larger
 // than 128GB and all hard drives support this mode
-void pio_write_lba(struct ide_device *dev, uint32_t sector, char *buffer, uint32_t offset) {
+void pio_read(struct ide_device *dev, uint32_t sector, char *buffer, uint32_t bytes) {
     enum lbaSupport addressing;
 
     // disable interrupts on all drives in this channel
@@ -387,7 +387,7 @@ void pio_write_lba(struct ide_device *dev, uint32_t sector, char *buffer, uint32
     //dma = 0;
 
     // (III) Wait if the drive is busy
-    while (ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY);
+    while (ide_read(dev->channel, ATA_REG_STATUS) & ATA_SR_BSY);
 
     // (IV) Select drive from the controller
     // we do not support CHS mode, so just do LBA
@@ -416,15 +416,17 @@ void pio_write_lba(struct ide_device *dev, uint32_t sector, char *buffer, uint32
     // and attempts to account for DMA
     int command = 0x00;
     if (addressing == LBA48) {
-        command = ATA_CMD_WRITE_PIO_EXT;
+        command = ATA_CMD_READ_PIO_EXT;
     } else {
-        command = ATA_CMD_WRITE_PIO;
+        command = ATA_CMD_READ_PIO;
     }
     ide_write(dev->channel, ATA_REG_COMMAND, command);
 
     // after sending command, we should poll, then read/write a sector, then poll,
     // then read/write a sector and rinse-repeat until we are done
     // also, we will catch errors
+
+    // for loop for number of bytes to read
 
 
     int val = ide_read(dev->channel, ATA_CMD_IDENTIFY);

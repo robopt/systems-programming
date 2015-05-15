@@ -128,10 +128,10 @@ int _ata_modinit(void);
 unsigned char ide_read(unsigned char channel, unsigned char reg);
 void ide_write(unsigned char channel, unsigned char reg, unsigned char data);
 void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads);
-unsigned char ide_polling(unsigned char channel, unsigned int advanced_check);
+uint8_t ide_polling(uint8_t channel, uint32_t advanced_check);
 void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4);
 void dev_summary(void);
-void pio_write_lba(struct ide_device *dev, uint32_t sectors, char *buffer, uint32_t offset);
+void pio_read(struct ide_device *dev, uint32_t sectors, char *buffer, uint32_t bytes);
 
 
 
