@@ -22,16 +22,18 @@ static struct ata_channel {
 } channels[2];
 
 struct ide_device {
-    uint8_t reserved;    // 0 (Empty) or 1 (This Drive really exists).
-    uint8_t channel;     // 0 (Primary Channel) or 1 (Secondary Channel).
-    uint8_t drive;       // 0 (Master Drive) or 1 (Slave Drive).
-    uint16_t type;        // 0: ATA, 1:ATAPI.
-    uint16_t signature;   // Drive Signature
-    uint16_t capabilities;// Features.
-    uint32_t commandSets; // Command Sets Supported.
-    uint32_t size;        // Size in Sectors.
-    uint8_t model[41];   // Model in string.
+    uint8_t reserved;       // 0 (Empty) or 1 (This Drive really exists).
+    uint8_t channel;        // 0 (Primary Channel) or 1 (Secondary Channel).
+    uint8_t drive;          // 0 (Master Drive) or 1 (Slave Drive).
+    uint16_t type;          // 0: ATA, 1:ATAPI.
+    uint16_t signature;     // Drive Signature
+    uint16_t capabilities;  // Features.
+    uint32_t commandSets;   // Command Sets Supported.
+    uint32_t size;          // Size in Sectors.
+    uint8_t model[41];      // Model in string.
 } ide_devices[4];
+
+enum lbaSupport { LBA48, LBA28, CHS };
 
 uint8_t ide_buf[2048] = {0};
 unsigned char ide_irq_invoked = 0;
@@ -57,6 +59,8 @@ int _ata_modinit() {
 #endif
 
     ide_initialize(0x1f0, 0x3f6, 0x170, 0x376, 0x000);
+    pio_write_lba(&ide_devices[0], 512, "test", 512);
+    dev_summary();
 
     //uint16_t command = pci_read_command(*ide);
     //// set to 1 to enable busmaster
@@ -221,11 +225,11 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
         if (device->classid == (uint8_t) 0x01) {
 
             // configure base I/O port, control, and other registers
-            channels[ATA_MASTER  ].base  = (BAR0 & 0xFFFFFFFC) + 0x1F0 * (!BAR0);
-            channels[ATA_MASTER  ].ctrl  = (BAR1 & 0xFFFFFFFC) + 0x3F6 * (!BAR1);
+            channels[ATA_MASTER].base  = (BAR0 & 0xFFFFFFFC) + 0x1F0 * (!BAR0);
+            channels[ATA_MASTER].ctrl  = (BAR1 & 0xFFFFFFFC) + 0x3F6 * (!BAR1);
             channels[ATA_SLAVE].base  = (BAR2 & 0xFFFFFFFC) + 0x170 * (!BAR2);
             channels[ATA_SLAVE].ctrl  = (BAR3 & 0xFFFFFFFC) + 0x376 * (!BAR3);
-            channels[ATA_MASTER  ].bmide = (BAR4 & 0xFFFFFFFC) + 0; // Bus Master IDE
+            channels[ATA_MASTER].bmide = (BAR4 & 0xFFFFFFFC) + 0; // Bus Master IDE
             channels[ATA_SLAVE].bmide = (BAR4 & 0xFFFFFFFC) + 8; // Bus Master IDE
 
             ide_write(ATA_PRIMARY, ATA_REG_CONTROL, 2);
@@ -336,27 +340,127 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
         else {
             continue;
         }
-
-
-        //for (int i = 0; i < 4; i++)
-        //    if (ide_devices[i].reserved == 1) {
-        //        c_printf(" Found %s Drive %dGB - %s\n",
-        //                (const char *[]){"ATA", "ATAPI"}[ide_devices[i].type],         /* Type */
-        //                ide_devices[i].size / 1024 / 1024 / 2,               /* Size */
-        //                ide_devices[i].model);
-        //    }
     }
-        // 4- Print Summary:
-        for (int i = 0; i < 4; i++) {
-            if (ide_devices[i].reserved == 1) {
-                c_printf(" Found %s Drive %dGB - %s\n",
-                        (const char *[]){"ATA", "ATAPI"}[ide_devices[i].type],
-                        ide_devices[i].size / 1024 / 1024 / 2,
-                        ide_devices[i].model);
-                c_printf(" Signature: %04x\n", ide_devices[i].signature );
-                c_printf(" Capabilities: %04x\n", ide_devices[i].capabilities);
-                c_printf(" CommandSets: %08x\n", ide_devices[i].commandSets );
-            }
-        }
 }
 
+void dev_summary() {
+    // 4- Print Summary:
+    // for ever possible IDE device
+    for (int dev = 0; dev < 4; dev++) {
+        // if IDE device is valid
+        if (ide_devices[dev].reserved == 1) {
+            c_printf("Detected %s device w/ %dMB: %s\n",
+                    (const char *[]){"ATA", "ATAPI"}[ide_devices[dev].type],
+                    ide_devices[dev].size / 1024 / 2,
+                    ide_devices[dev].model);
+            c_printf("    Signature:    %04x\n", ide_devices[dev].signature);
+            c_printf("    Capabilities: %04x\n", ide_devices[dev].capabilities);
+            c_printf("    CommandSets:  %08x\n", ide_devices[dev].commandSets);
+        }
+    }
+}
+
+// We are only going to do 28-bit LBA because we don't need hard drives larger
+// than 128GB and all hard drives support this mode
+void pio_write_lba(struct ide_device *dev, uint32_t sector, char *buffer, uint32_t offset) {
+    enum lbaSupport addressing;
+
+    // disable interrupts on all drives in this channel
+    ide_write(dev->channel, ATA_REG_CONTROL, channels[dev->channel].interrupt = (ide_irq_invoked = 0x0) + 0x02);
+
+    // (I) Select one from LBA48, LBA 28, or CHS
+    // most modern hard disks support LBA48 mode
+    // all devices support LBA28 mode
+    // we are not doing CHS mode -- it has some weird bit shifting
+    if (dev->commandSets & (1 << 26)) {
+        addressing = LBA48;
+    }
+    else if (dev->capabilities & 0x200) {
+        addressing = LBA28;
+    }
+    //else {
+    //    addressing = CHS;
+    //}
+
+    // (II) See if drive supports DMA or not
+    // we do not support DMA
+    //dma = 0;
+
+    // (III) Wait if the drive is busy
+    while (ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY);
+
+    // (IV) Select drive from the controller
+    // we do not support CHS mode, so just do LBA
+    ide_write(dev->channel, ATA_REG_HDDEVSEL, 0xE0 | (dev->drive << 4) | ((sector >> 24) & 0x0F));
+
+    //if (addressing = CHS) {
+    //    ide_write(dev->channel, ATA_REG_HDDEVSEL, 0xA0 | (dev->drive << 4) | head);
+    //} else {
+    //}
+
+    // (V) Write parameters and configure LBA
+    ide_write(dev->channel, ATA_REG_SECCOUNT0, 1);
+    ide_write(dev->channel, ATA_REG_LBA0, (sector & 0xff));
+    ide_write(dev->channel, ATA_REG_LBA1, (sector & 0xff00) >> 8);
+    ide_write(dev->channel, ATA_REG_LBA2, (sector & 0x0ff0000) >> 16);
+    if (addressing == LBA48) {
+        ide_write( dev->channel, ATA_REG_SECCOUNT1, 1 );
+        ide_write( dev->channel, ATA_REG_LBA3, (sector & 0xff000000) >> 24);
+        ide_write( dev->channel, ATA_REG_LBA4, 0 );
+        ide_write( dev->channel, ATA_REG_LBA5, 0 );
+    }
+
+    // (VI) Select the command and send it
+    // osdev has a variety of command sets to pick from
+    // becuase their function does both in and out
+    // and attempts to account for DMA
+    int command = 0x00;
+    if (addressing == LBA48) {
+        command = ATA_CMD_WRITE_PIO_EXT;
+    } else {
+        command = ATA_CMD_WRITE_PIO;
+    }
+    ide_write(dev->channel, ATA_REG_COMMAND, command);
+
+    // after sending command, we should poll, then read/write a sector, then poll,
+    // then read/write a sector and rinse-repeat until we are done
+    // also, we will catch errors
+
+
+    int val = ide_read(dev->channel, ATA_CMD_IDENTIFY);
+
+    c_printf("\ntesting lba types %d\n", val);
+    // sanity check -- this should never fail
+    // check if device supports lba28
+
+
+    // configure lba28
+
+}
+
+//void ide_read_sectors(unsigned char drive, unsigned char numsects, unsigned int lba,
+//        unsigned short es, unsigned int edi) {
+//
+//    int error = 0x00;
+//
+//    // 1: Check if the drive presents:
+//    // ==================================
+//    if (drive > 3 || ide_devices[drive].reserved == 0) error = 0x1;      // Drive Not Found!
+//
+//    // 2: Check if inputs are valid:
+//    // ==================================
+//    else if (((lba + numsects) > ide_devices[drive].size) && (ide_devices[drive].type == ATA_TYPE_ATA))
+//        error = 0x2;                     // Seeking to invalid position.
+//
+//    // 3: Read in PIO Mode through Polling & IRQs:
+//    // ============================================
+//    else {
+//        //unsigned char err;
+//        if (ide_devices[drive].type == ATA_TYPE_ATA)
+//            error = ide_ata_access(ATA_READ, drive, lba, numsects, es, edi);
+//        else if (ide_devices[drive].type == ATA_TYPE_ATAPI)
+//            for (int i = 0; i < numsects; i++)
+//                error = ide_atapi_read(drive, lba + i, 1, es, edi + (i*2048));
+//        error = ide_print_error(drive, error);
+//    }
+//}
