@@ -128,14 +128,18 @@ enum lba_support { LBA48, LBA28, CHS };
 enum pio_direction { READ, WRITE };
 
 int _ata_modinit(void);
-unsigned char ide_read(unsigned char channel, unsigned char reg);
+
+uint8_t ide_read(uint8_t channel, uint8_t reg);
 void ide_write(unsigned char channel, unsigned char reg, unsigned char data);
+
 void ide_read_bufb(uint8_t channel, uint8_t *buffer, int bufsize);
 void ide_read_bufw(uint8_t channel, uint16_t *buffer, int bufsize);
 void ide_read_bufl(uint8_t channel, uint32_t *buffer, int bufsize);
-void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads);
+
 uint8_t ide_polling(uint8_t channel, uint32_t advanced_check);
-void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4);
+uint8_t ide_print_error(uint8_t drive, uint8_t err);
+
+void ide_initialize(uint8_t BAR0, uint8_t BAR1, uint8_t BAR2, uint8_t BAR3, uint8_t BAR4);
 void dev_summary(void);
 
 int ata_pio_rw(struct ide_device *dev, uint32_t sectors, uint8_t *buffer, uint32_t bytes, enum pio_direction rw);
@@ -145,7 +149,5 @@ int write_sector(struct ide_device *dev, uint32_t sector, uint8_t *buf);
 int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes);
 
 void rw_test(void);
-
-
 
 #endif

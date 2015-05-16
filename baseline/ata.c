@@ -93,7 +93,7 @@ int _ata_modinit() {
 #endif
 
     // initialize IDE drives
-    ide_initialize(ATA_PRIMARY_CMD_BASE, ATA_PRIMARY_CTRL_BASE, ATA_SECONDARY_CMD_BASE, ATA_SECONDARY_CTRL_BASE, 0x000);
+    ide_initialize( (uint8_t)ATA_PRIMARY_CMD_BASE, (uint8_t)ATA_PRIMARY_CTRL_BASE, (uint8_t)ATA_SECONDARY_CMD_BASE, (uint8_t)ATA_SECONDARY_CTRL_BASE, 0x000);
 
     dev_summary();      // print out drive summary
     rw_test();          // test driver by writing to and reading from disk
@@ -211,7 +211,7 @@ uint8_t ide_polling(uint8_t channel, uint32_t advanced_check) {
 
 }
 
-unsigned char ide_print_error(unsigned int drive, unsigned char err) {
+uint8_t ide_print_error(uint8_t drive, uint8_t err) {
     if (err == 0)
         return err;
 
@@ -237,8 +237,7 @@ unsigned char ide_print_error(unsigned int drive, unsigned char err) {
     return err;
 }
 
-void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3,
-        unsigned int BAR4) {
+void ide_initialize(uint8_t BAR0, uint8_t BAR1, uint8_t BAR2, uint8_t BAR3, uint8_t BAR4) {
 
     int device_count = 0;
 
