@@ -143,7 +143,14 @@ void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buff
 uint8_t ide_polling(uint8_t channel, uint32_t advanced_check);
 void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4);
 void dev_summary(void);
-void ata_pio_rw(struct ide_device *dev, uint32_t sectors, uint8_t *buffer, uint32_t bytes, enum pio_direction rw);
+
+int ata_pio_rw(struct ide_device *dev, uint32_t sectors, uint8_t *buffer, uint32_t bytes, enum pio_direction rw);
+int read_sector(struct ide_device *dev, uint32_t sector, uint8_t *buf);
+int disk_read(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes);
+int write_sector(struct ide_device *dev, uint32_t sector, uint8_t *buf);
+int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes);
+
+void rw_test(void);
 
 
 

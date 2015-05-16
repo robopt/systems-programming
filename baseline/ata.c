@@ -8,6 +8,7 @@
 #include "x86arch.h"
 #include "support.h"
 #include "ulib.h"
+#include "klib.h"
 
 #define _ata_debug_
 #ifdef  _ata_debug_
@@ -57,16 +58,8 @@ int _ata_modinit() {
 #endif
 
     ide_initialize(0x1f0, 0x3f6, 0x170, 0x376, 0x000);
-    //pio_write_lba(&ide_devices[0], 512, "test", 512);
     dev_summary();
-
-    //uint16_t command = pci_read_command(*ide);
-    //// set to 1 to enable busmaster
-    //command |= 0x4;
-    //// clear bit 10 to make sure that interrupts are enabled
-    //command &= 0xfdff;
-
-    //pci_write_command(*ide, command);
+    rw_test();
 
     return 0;
 }
@@ -360,7 +353,7 @@ void dev_summary() {
 
 // We are only going to do 28-bit LBA because we don't need hard drives larger
 // than 128GB and all hard drives support this mode
-void ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_t bytes, enum pio_direction rw) {
+int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_t bytes, enum pio_direction rw) {
     enum lba_support addressing;
 
     // disable interrupts on all drives in this channel
@@ -488,8 +481,47 @@ void ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32
 
     }
     else {
+        return status;
         c_printf("device busy, %s failed", rw);
     }
+
+    return 0;
+}
+
+int read_sector(struct ide_device *dev, uint32_t sector, uint8_t *buf) {
+    return disk_read(dev, sector, buf, 512);
+}
+
+int disk_read(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes) {
+    return ata_pio_rw(dev, sector, buf, bytes, READ);
+}
+
+int write_sector(struct ide_device *dev, uint32_t sector, uint8_t *buf) {
+    return disk_write(dev, sector, buf, 512);
+}
+
+int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes) {
+    return ata_pio_rw(dev, sector, buf, bytes, WRITE);
+}
+
+void rw_test() {
+    uint8_t data[512];
+
+    for (int dev = 0; dev < 4; dev++) {
+        // if IDE device is valid
+        if (ide_devices[dev].reserved == 1) {
+            c_printf("device #%d", dev);
+            disk_write(&ide_devices[dev], 1, (uint8_t *)"testing 1 2 3\n\0", 16);
+
+            read_sector(&ide_devices[dev], 0, data);
+            for (int i = 0; i < 20; i++ ) {
+                c_printf("%c", data[i]);
+                data[i] = 0;
+            }
+        }
+    }
+
+    _kpanic("rw_test", "read write finished?!?");
 }
 
 //void ide_read_sectors(unsigned char drive, unsigned char numsects, unsigned int lba,
