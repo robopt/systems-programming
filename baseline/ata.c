@@ -178,45 +178,92 @@ void ide_write(uint8_t channel, uint8_t reg, uint8_t data) {
     }
 }
 
+/*
+ *  Name:           ide_read_bufb
+ *
+ *  Description:    Read the configuration from device channel into the buffer.
+ *                  This function is primarily used to read information from the
+ *                  identification space.
+ *
+ *                  Note: This code structure was from primarily from the OSDev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *                  The OSDev code utilized assembly routines that we did not implement
+ *                  and also had a caveat of trashing several registers.
+ *                  The project at https://github.com/agargiulo/DOSS/tree/master/disk
+ *                  improved upone this by splitting the read into different segment sizes.
+ *                  This code was further cleaned up a bit by removing unnecessary parameters.
+ *
+ *
+ *  Arguments:      channel:    channel which the disk is located at
+ *                  *buffer:    buffer to store data into
+ *                  bufsize:    size of the buffer
+ *
+ *  Return:         nothing (void)
+*/
 void ide_read_bufb(uint8_t channel, uint8_t *buffer, int bufsize) {
     for (int i = 0; i < bufsize; i++) {
         buffer[i] = __inb(channels[channel].base);
     }
 }
 
+/*
+ *  Name:           ide_read_bufw
+ *
+ *  Description:    Read the configuration from device channel into the buffer.
+ *                  This function is primarily used to read information from the
+ *                  identification space.
+ *
+ *                  Note: This code structure was from primarily from the OSDev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *                  The OSDev code utilized assembly routines that we did not implement
+ *                  and also had a caveat of trashing several registers.
+ *                  The project at https://github.com/agargiulo/DOSS/tree/master/disk
+ *                  improved upone this by splitting the read into different segment sizes.
+ *                  This code was further cleaned up a bit by removing unnecessary parameters.
+ *
+ *
+ *  Arguments:      channel:    channel which the disk is located at
+ *                  *buffer:    buffer to store data into
+ *                  bufsize:    size of the buffer
+ *
+ *  Return:         nothing (void)
+*/
 void ide_read_bufw(uint8_t channel, uint16_t *buffer, int bufsize) {
     for (int i = 0; i < bufsize; i++) {
         buffer[i] = __inw(channels[channel].base);
     }
 }
 
+/*
+ *  Name:           ide_read_bufl
+ *
+ *  Description:    Read the configuration from device channel into the buffer.
+ *                  This function is primarily used to read information from the
+ *                  identification space.
+ *
+ *                  Note: This code structure was from primarily from the OSDev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *                  The OSDev code utilized assembly routines that we did not implement
+ *                  and also had a caveat of trashing several registers.
+ *                  The project at https://github.com/agargiulo/DOSS/tree/master/disk
+ *                  improved upone this by splitting the read into different segment sizes.
+ *                  This code was further cleaned up a bit by removing unnecessary parameters.
+ *
+ *
+ *  Arguments:      channel:    channel which the disk is located at
+ *                  *buffer:    buffer to store data into
+ *                  bufsize:    size of the buffer
+ *
+ *  Return:         nothing (void)
+*/
 void ide_read_bufl(uint8_t channel, uint32_t *buffer, int bufsize) {
     for (int i = 0; i < bufsize; i++) {
         buffer[i] = __inl(channels[channel].base);
     }
 }
-
-//void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer,
-//        unsigned int quads) {
-//    /* WARNING: This code contains a serious bug. The inline assembly trashes ES and
-//     *           ESP for all of the code the compiler generates between the inline
-//     *           assembly blocks.
-//     */
-//    if (reg > 0x07 && reg < 0x0C)
-//        ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].interrupt);
-//    __asm("pushw %es; movw %ds, %ax; movw %ax, %es");
-//    if (reg < 0x08)
-//        __inl(channels[channel].base  + reg - 0x00, buffer, quads);
-//    else if (reg < 0x0C)
-//        __inl(channels[channel].base  + reg - 0x06, buffer, quads);
-//    else if (reg < 0x0E)
-//        __inl(channels[channel].ctrl + reg - 0x0A, buffer, quads);
-//    else if (reg < 0x16)
-//        __inl(channels[channel].bmide + reg - 0x0E, buffer, quads);
-//    __asm("popw %es;");
-//    if (reg > 0x07 && reg < 0x0C)
-//        ide_write(channel, ATA_REG_CONTROL, channels[channel].interrupt);
-//}
 
 uint8_t ide_polling(uint8_t channel, uint32_t advanced_check) {
 
