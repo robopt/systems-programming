@@ -49,6 +49,7 @@ int _ata_modinit() {
     // Subdevice:   d620        Device
 
     pcidev *ide = find_dev(0x8086, 0x27df, 0x01, 0x01);
+    //pcidev *ide = find_dev(0x8086, 0x24db, 0x01, 0x01);
     if (ide == (void*) 0) {
         return -1;
     }
@@ -253,12 +254,16 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
 
                         if (status & ATA_SR_ERR) {
                             err = 1;        // if err, device is not ATA
+                            c_printf("\nerror\n");
                             break;
                         }
 
                         if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) {
+                            c_printf("\nready\n");
                             break;          // everything is okay
                         }
+
+                        //c_printf("Error status is %d\nstill in poll\n", err);
 
                     }
                     c_printf("check polling status");
