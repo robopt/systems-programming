@@ -7,35 +7,35 @@
 // and https://github.com/scialex/reenix/blob/vfs/kernel/drivers/blockdev/disk/ata.rs
 
 /* Copied from the bochsrc, make sure it always matches */
-#define IRQ_DISK_PRIMARY    14
-#define IRQ_DISK_SECONDARY  15
+#define IRQ_DISK_PRIMARY        14
+#define IRQ_DISK_SECONDARY      15
 
-#define ATA_NUM_CHANNELS    2
-#define ATA_SECTOR_SIZE     512
+#define ATA_NUM_CHANNELS        2
+#define ATA_SECTOR_SIZE         512
 
 // IDE Type
-#define     ATA_TYPE_ATA    0x00
-#define     ATA_TYPE_ATAPI  0x01
+#define     ATA_TYPE_ATA        0x00
+#define     ATA_TYPE_ATAPI      0x01
 
 // Master or slave
-#define     ATA_MASTER      0x00
-#define     ATA_SLAVE       0x01
+#define     ATA_MASTER          0x00
+#define     ATA_SLAVE           0x01
 
 // Channels
-#define ATA_PRIMARY         0x00
-#define ATA_SECONDARY       0x01
+#define ATA_PRIMARY             0x00
+#define ATA_SECONDARY           0x01
 
 // Operations
-#define ATA_READ            0x00
-#define ATA_WRITE           0x01
+#define ATA_READ                0x00
+#define ATA_WRITE               0x01
 
 // drive head values
 #define ATA_DRIVEHEAD_MASTER    0xa0
 #define ATA_DRIVEHEAD_SLAVE     0xb0
 
 /* Drive/head values for CHS / LBA */
-#define ATA_DRIVEHEAD_CHS 0x00
-#define ATA_DRIVEHEAD_LBA 0x40
+#define ATA_DRIVEHEAD_CHS       0x00
+#define ATA_DRIVEHEAD_LBA       0x40
 
 // base port addresses
 #define ATA_PRIMARY_CTRL_BASE   0x3f0
@@ -70,25 +70,25 @@
 #define     ATA_REG_DRIVEADDR   0x0d    // device address       in      BAR1 + 7
 
 // Status
-#define ATA_SR_BSY      0x80    // Busy
-#define ATA_SR_DRDY     0x40    // Drive ready
-#define ATA_SR_DF       0x20    // Drive write fault
-#define ATA_SR_DSC      0x10    // Drive seek complete
-#define ATA_SR_DRQ      0x08    // Data request ready
-#define ATA_SR_CORR     0x04    // Corrected data
-#define ATA_SR_IDX      0x02    // Inlex
-#define ATA_SR_ERR      0x01    // Error
+#define     ATA_SR_BSY          0x80    // Busy
+#define     ATA_SR_DRDY         0x40    // Drive ready
+#define     ATA_SR_DF           0x20    // Drive write fault
+#define     ATA_SR_DSC          0x10    // Drive seek complete
+#define     ATA_SR_DRQ          0x08    // Data request ready
+#define     ATA_SR_CORR         0x04    // Corrected data
+#define     ATA_SR_IDX          0x02    // Inlex
+#define     ATA_SR_ERR          0x01    // Error
 
 // Error codes
-#define     ATA_ER_ICRC     0x80    // ATA Ultra DMA bad CRC
-#define     ATA_ER_BBK      0x80    // ATA bad block
-#define     ATA_ER_UNC      0x40    // ATA uncorrected error
-#define     ATA_ER_MC       0x20    // ATA media change
-#define     ATA_ER_IDNF     0x10    // ATA id not found
-#define     ATA_ER_MCR      0x08    // ATA media change request
-#define     ATA_ER_ABRT     0x04    // ATA command aborted
-#define     ATA_ER_TK0NF    0x02    // ATA track 0 not found
-#define     ATA_ER_AMNF     0x01    // ATA address mark not found
+#define     ATA_ER_ICRC         0x80    // ATA Ultra DMA bad CRC
+#define     ATA_ER_BBK          0x80    // ATA bad block
+#define     ATA_ER_UNC          0x40    // ATA uncorrected error
+#define     ATA_ER_MC           0x20    // ATA media change
+#define     ATA_ER_IDNF         0x10    // ATA id not found
+#define     ATA_ER_MCR          0x08    // ATA media change request
+#define     ATA_ER_ABRT         0x04    // ATA command aborted
+#define     ATA_ER_TK0NF        0x02    // ATA track 0 not found
+#define     ATA_ER_AMNF         0x01    // ATA address mark not found
 
 // Commands
 #define     ATA_CMD_READ_PIO            0x20
@@ -106,18 +106,19 @@
 #define     ATA_CMD_IDENTIFY            0xEC
 
 // Defined buffer bytes in "identification space" from cmd identify and identify packet
-#define     ATA_IDENT_DEVICETYPE    0
-#define     ATA_IDENT_CYLINDERS     2
-#define     ATA_IDENT_HEADS         6
-#define     ATA_IDENT_SECTORS       12
-#define     ATA_IDENT_SERIAL        20
-#define     ATA_IDENT_MODEL         54
-#define     ATA_IDENT_CAPABILITIES  98
-#define     ATA_IDENT_FIELDVALID    106
-#define     ATA_IDENT_MAX_LBA       120
-#define     ATA_IDENT_COMMANDSETS   164
-#define     ATA_IDENT_MAX_LBA_EXT   200
+#define     ATA_IDENT_DEVICETYPE        0
+#define     ATA_IDENT_CYLINDERS         2
+#define     ATA_IDENT_HEADS             6
+#define     ATA_IDENT_SECTORS           12
+#define     ATA_IDENT_SERIAL            20
+#define     ATA_IDENT_MODEL             54
+#define     ATA_IDENT_CAPABILITIES      98
+#define     ATA_IDENT_FIELDVALID        106
+#define     ATA_IDENT_MAX_LBA           120
+#define     ATA_IDENT_COMMANDSETS       164
+#define     ATA_IDENT_MAX_LBA_EXT       200
 
+// forward declare some global variables
 extern unsigned char ide_buf[2048];
 extern unsigned char ide_irq_invoked;
 
