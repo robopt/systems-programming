@@ -16,11 +16,12 @@
 #endif
 
 /*
-**  struct declaration for ATA channel
-**  each motherboard can support up to two ATA channels
-**
-**  contains info on which port is used for commands and control,
-**  as well as the bus master IDE
+ *  Name:           static struct ata_channel channels[2]
+ *
+ *  Description:    struct declaration for ATA channel. Each motherboard can
+ *                  support up to two ATA channels. Contains info on which port
+ *                  is used for commands and control, as well as bus master IDE.
+ *                  Note that we do not use the bus master IDE for functionality.
 */
 static struct ata_channel {
     uint32_t base;      // base port for cmd registers
@@ -30,10 +31,11 @@ static struct ata_channel {
 } channels[2];
 
 /*
-**  struct declaration for the detected IDE device
-**
-**  contains in on whether or not drive exists, channel, master/ slave, type,
-**  and more
+ *  Name:           struct ide_device ide_devices[4]
+ *
+ *  Description:    struct declaration for the detected IDE device. Contains
+ *                  configuration about the device, such as whether it exists,
+ *                  which channel it is on, master/ slave setting, and more.
 */
 struct ide_device {
     uint8_t reserved;       // 0 (Empty) or 1 (This Drive really exists).
@@ -53,6 +55,19 @@ uint8_t ide_buf[2048] = {0};    // buffer used to read the identification space
 unsigned char ide_irq_invoked = 0;  // used to disable all channel interrupts
                                     // from connected drives
 
+/*
+ *  Name:           _ata_modinit()
+ *
+ *  Description:    Finds the attached device on the PCI bus, printing out it's
+ *                  info, initializes the drives connected to the controller,
+ *                  prints out the device summary, and writes a string to
+ *                  the disk
+ *
+ * Arguments:       None (void)
+ *
+ * Return:          int: 0 if IDE controller was located
+ *                      -1 otherwise
+*/
 int _ata_modinit() {
     // Slot:        00:1f.1
 
@@ -65,18 +80,23 @@ int _ata_modinit() {
     // Subdevice:   d620        Device
 
     pcidev *ide = find_dev(0x8086, 0x27df, 0x01, 0x01);
+
+    // device for older DSL computers
     //pcidev *ide = find_dev(0x8086, 0x24db, 0x01, 0x01);
+
     if (ide == (void*) 0) {
-        return -1;
+        return -1;      // return -1 if IDE controllers were not found
     }
 
 #ifdef _ata_debug_
     c_printf("[ata.c][_ata_modinit]: IDE Contrller @= %x, irq: %x, Bar0: %x, Bar1: %x, Bar2: %x, Bar3: %x, Bar4 %x\n", ide->address, ide->irq, ide->bar0, ide->bar1, ide->bar2, ide->bar3, ide->bar4);
 #endif
 
-    ide_initialize(0x1f0, 0x3f6, 0x170, 0x376, 0x000);
-    dev_summary();
-    rw_test();
+    // initialize IDE drives
+    ide_initialize(ATA_PRIMARY_CMD_BASE, ATA_PRIMARY_CTRL_BASE, ATA_SECONDARY_CMD_BASE, ATA_SECONDARY_CTRL_BASE, 0x000);
+
+    dev_summary();      // print out drive summary
+    rw_test();          // test driver by writing to and reading from disk
 
     return 0;
 }
