@@ -101,20 +101,42 @@ int _ata_modinit() {
     return 0;
 }
 
+/*
+ *  Name:           ide_read
+ *
+ *  Description:    Read the information contained in the IDE device registers.
+ *                  Primarily useful for checking status codes, configuration,
+ *                  and current state of the device.
+ *
+ *                  Note: This code was from primarily from the OSDev wiki page:
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *
+ *  Arguments:      channel:    channel which the disk is located at
+ *                  reg:        device register that we want to interrogate
+ *
+ *  Return:         uint8_t:    value read from the register
+*/
 uint8_t ide_read(uint8_t channel, uint8_t reg) {
     uint8_t result = 0;
-    if (reg > 0x07 && reg < 0x0C)
+
+    if (reg > 0x07 && reg < 0x0C) {
         ide_write(channel, ATA_REG_CONTROL, 0x82);
-    if (reg < 0x08)
+    }
+
+    if (reg < 0x08) {
         result = __inb(channels[channel].base + reg - 0x00);
-    else if (reg < 0x0C)
+    } else if (reg < 0x0C) {
         result = __inb(channels[channel].base  + reg - 0x06);
-    else if (reg < 0x0E)
+    } else if (reg < 0x0E) {
         result = __inb(channels[channel].ctrl  + reg - 0x0A);
-    else if (reg < 0x16)
+    } else if (reg < 0x16) {
         result = __inb(channels[channel].bmide + reg - 0x0E);
-    if (reg > 0x07 && reg < 0x0C)
+    }
+
+    if (reg > 0x07 && reg < 0x0C) {
         ide_write(channel, ATA_REG_CONTROL, 2);
+    }
+
     return result;
 }
 
@@ -464,7 +486,7 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     // for loop for number of bytes to read
 
     int status = ide_polling(dev->channel, 1);                          // poll and check status of device
-    while (!(ide_read(dev->channel, ATA_REG_STATUS) & ATA_SR_DRQ)); // while data request not ready
+    while (!(ide_read(dev->channel, ATA_REG_STATUS) & ATA_SR_DRQ));     // while data request not ready
 
     // if there is no device error
     if (!status) {
