@@ -15,6 +15,13 @@
 #include "c_io.h"
 #endif
 
+/*
+**  struct declaration for ATA channel
+**  each motherboard can support up to two ATA channels
+**
+**  contains info on which port is used for commands and control,
+**  as well as the bus master IDE
+*/
 static struct ata_channel {
     uint32_t base;      // base port for cmd registers
     uint32_t ctrl;      // base port for ctrl registers
@@ -22,6 +29,12 @@ static struct ata_channel {
     uint8_t  interrupt;
 } channels[2];
 
+/*
+**  struct declaration for the detected IDE device
+**
+**  contains in on whether or not drive exists, channel, master/ slave, type,
+**  and more
+*/
 struct ide_device {
     uint8_t reserved;       // 0 (Empty) or 1 (This Drive really exists).
     uint8_t channel;        // 0 (Primary Channel) or 1 (Secondary Channel).
@@ -34,8 +47,11 @@ struct ide_device {
     uint8_t model[41];      // Model in string.
 } ide_devices[4];
 
-uint8_t ide_buf[2048] = {0};
-unsigned char ide_irq_invoked = 0;
+uint8_t ide_buf[2048] = {0};    // buffer used to read the identification space
+                                // and fill the ide_device struct
+
+unsigned char ide_irq_invoked = 0;  // used to disable all channel interrupts
+                                    // from connected drives
 
 int _ata_modinit() {
     // Slot:        00:1f.1
