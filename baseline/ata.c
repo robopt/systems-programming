@@ -194,7 +194,6 @@ void ide_write(uint8_t channel, uint8_t reg, uint8_t data) {
  *                  improved upone this by splitting the read into different segment sizes.
  *                  This code was further cleaned up a bit by removing unnecessary parameters.
  *
- *
  *  Arguments:      channel:    channel which the disk is located at
  *                  *buffer:    buffer to store data into
  *                  bufsize:    size of the buffer
@@ -222,7 +221,6 @@ void ide_read_bufb(uint8_t channel, uint8_t *buffer, int bufsize) {
  *                  The project at https://github.com/agargiulo/DOSS/tree/master/disk
  *                  improved upone this by splitting the read into different segment sizes.
  *                  This code was further cleaned up a bit by removing unnecessary parameters.
- *
  *
  *  Arguments:      channel:    channel which the disk is located at
  *                  *buffer:    buffer to store data into
@@ -252,7 +250,6 @@ void ide_read_bufw(uint8_t channel, uint16_t *buffer, int bufsize) {
  *                  improved upone this by splitting the read into different segment sizes.
  *                  This code was further cleaned up a bit by removing unnecessary parameters.
  *
- *
  *  Arguments:      channel:    channel which the disk is located at
  *                  *buffer:    buffer to store data into
  *                  bufsize:    size of the buffer
@@ -265,7 +262,28 @@ void ide_read_bufl(uint8_t channel, uint32_t *buffer, int bufsize) {
     }
 }
 
-uint8_t ide_polling(uint8_t channel, uint32_t advanced_check) {
+/*
+ *  Name:           ide_polling
+ *
+ *  Description:    Poll for the status of the disk and check for errors. Primarily
+ *                  used for initializing the disk and waiting for the device to be
+ *                  ready after a command has been sent. The device should wait
+ *                  approxiamately 400 nanoseconds before reading the status bits.
+ *
+ *                  Note: This code structure was from primarily from the OSDev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *                  It was slightly improved by always utilizing an advanced error
+ *                  check -- the extra checks come at little to no cost.
+ *
+ *  Arguments:      channel:    channel which the disk is located at
+ *
+ *  Return:         uint8_t:    0 if the drive encountered no errors
+ *                              1 if the drive encountered a fault
+ *                              2 for generic error
+ *                              3 for data request ready
+*/
+uint8_t ide_polling(uint8_t channel) {
 
     // (I) Delay 400 nanosecond for BSY to be set:
     // -------------------------------------------------
@@ -277,26 +295,23 @@ uint8_t ide_polling(uint8_t channel, uint32_t advanced_check) {
     while (ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY)
         ; // Wait for BSY to be zero.
 
-    if (advanced_check) {
-        unsigned char state = ide_read(channel, ATA_REG_STATUS); // Read Status Register.
+    unsigned char state = ide_read(channel, ATA_REG_STATUS); // Read Status Register.
 
-        // (III) Check For Errors:
-        // -------------------------------------------------
-        if (state & ATA_SR_ERR)
-            return 2; // Error.
+    // (III) Check For Errors:
+    // -------------------------------------------------
+    if (state & ATA_SR_ERR)
+        return 2; // Error.
 
-        // (IV) Check If Device fault:
-        // -------------------------------------------------
-        if (state & ATA_SR_DF)
-            return 1; // Device Fault.
+    // (IV) Check If Device fault:
+    // -------------------------------------------------
+    if (state & ATA_SR_DF)
+        return 1; // Device Fault.
 
-        // (V) Check DRQ:
-        // -------------------------------------------------
-        // BSY = 0; DF = 0; ERR = 0 so we should check for DRQ now.
-        if ((state & ATA_SR_DRQ) == 0)
-            return 3; // DRQ should be set
-
-    }
+    // (V) Check DRQ:
+    // -------------------------------------------------
+    // BSY = 0; DF = 0; ERR = 0 so we should check for DRQ now.
+    if ((state & ATA_SR_DRQ) == 0)
+        return 3; // DRQ should be set
 
     return 0; // No Error.
 
@@ -554,7 +569,7 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
 
     // for loop for number of bytes to read
 
-    int status = ide_polling(dev->channel, 1);                          // poll and check status of device
+    int status = ide_polling(dev->channel);                             // poll and check status of device
     while (!(ide_read(dev->channel, ATA_REG_STATUS) & ATA_SR_DRQ));     // while data request not ready
 
     // if there is no device error
@@ -638,9 +653,9 @@ int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes)
 void rw_test() {
     uint8_t data[512];
     char *string = "welcome 1 2 3\n";   // interesting --
-                                        // alpha characters are sized as 1 unit
-                                        // spaces as 4
-                                        // numbers as 2
+    // alpha characters are sized as 1 unit
+    // spaces as 4
+    // numbers as 2
 
     for (int dev = 0; dev < 4; dev++) {
         // if IDE device is valid

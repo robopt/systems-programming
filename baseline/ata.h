@@ -136,7 +136,7 @@ void ide_read_bufb(uint8_t channel, uint8_t *buffer, int bufsize);
 void ide_read_bufw(uint8_t channel, uint16_t *buffer, int bufsize);
 void ide_read_bufl(uint8_t channel, uint32_t *buffer, int bufsize);
 
-uint8_t ide_polling(uint8_t channel, uint32_t advanced_check);
+uint8_t ide_polling(uint8_t channel);
 uint8_t ide_print_error(uint8_t drive, uint8_t err);
 
 void ide_initialize(uint8_t BAR0, uint8_t BAR1, uint8_t BAR2, uint8_t BAR3, uint8_t BAR4);
