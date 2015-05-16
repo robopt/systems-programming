@@ -325,14 +325,14 @@ uint8_t ide_print_error(uint8_t drive, uint8_t err) {
     if (err == 1) {c_printf("- Device Fault\n     "); err = 19;}
     else if (err == 2) {
         unsigned char st = ide_read(ide_devices[drive].channel, ATA_REG_ERROR);
-        if (st & ATA_ER_AMNF)   {c_printf("- No Address Mark Found\n     ");   err = 7;}
-        if (st & ATA_ER_TK0NF)  {c_printf("- No Media or Media Error\n     ");   err = 3;}
-        if (st & ATA_ER_ABRT)   {c_printf("- Command Aborted\n     ");      err = 20;}
-        if (st & ATA_ER_MCR)    {c_printf("- No Media or Media Error\n     ");   err = 3;}
-        if (st & ATA_ER_IDNF)   {c_printf("- ID mark not Found\n     ");      err = 21;}
-        if (st & ATA_ER_MC)     {c_printf("- No Media or Media Error\n     ");   err = 3;}
-        if (st & ATA_ER_UNC)    {c_printf("- Uncorrectable Data Error\n     ");   err = 22;}
-        if (st & ATA_ER_BBK)    {c_printf("- Bad Sectors\n     ");       err = 13;}
+        if (st & ATA_ER_AMNF) {c_printf("- No Address Mark Found\n     ");   err = 7;}
+        if (st & ATA_ER_TK0NF){c_printf("- No Media or Media Error\n     ");   err = 3;}
+        if (st & ATA_ER_ABRT) {c_printf("- Command Aborted\n     ");      err = 20;}
+        if (st & ATA_ER_MCR)  {c_printf("- No Media or Media Error\n     ");   err = 3;}
+        if (st & ATA_ER_IDNF) {c_printf("- ID mark not Found\n     ");      err = 21;}
+        if (st & ATA_ER_MC)   {c_printf("- No Media or Media Error\n     ");   err = 3;}
+        if (st & ATA_ER_UNC)  {c_printf("- Uncorrectable Data Error\n     ");   err = 22;}
+        if (st & ATA_ER_BBK)  {c_printf("- Bad Sectors\n     ");       err = 13;}
     } else  if (err == 3)           {c_printf("- Reads Nothing\n     "); err = 23;}
     else  if (err == 4)  {c_printf("- Write Protected\n     "); err = 8;}
     c_printf("- [%s %s] %s\n",
@@ -627,8 +627,8 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
 
     }
     else {
-        return status;
         c_printf("device busy, %s failed", rw);
+        return status;
     }
 
     return 0;
