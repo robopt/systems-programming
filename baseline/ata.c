@@ -33,7 +33,8 @@ struct ide_device {
     uint8_t model[41];      // Model in string.
 } ide_devices[4];
 
-enum lbaSupport { LBA48, LBA28, CHS };
+enum lba_support { LBA48, LBA28, CHS };
+enum pio_direction { READ, WRITE };
 
 uint8_t ide_buf[2048] = {0};
 unsigned char ide_irq_invoked = 0;
@@ -277,7 +278,7 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
                         uint8_t low = ide_read(chan, ATA_REG_LBA1);
                         uint8_t high = ide_read(chan, ATA_REG_LBA2);
 
-                        if ( low = 0x14 && high == 0xEB)
+                        if ( low == 0x14 && high == 0xEB)
                             type = ATA_TYPE_ATAPI;
                         else if (low == 0x69 && high == 0x96)
                             type = ATA_TYPE_ATAPI;
@@ -362,8 +363,8 @@ void dev_summary() {
 
 // We are only going to do 28-bit LBA because we don't need hard drives larger
 // than 128GB and all hard drives support this mode
-void pio_read(struct ide_device *dev, uint32_t sector, char *buffer, uint32_t bytes) {
-    enum lbaSupport addressing;
+void ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_t bytes, enum pio_direction rw) {
+    enum lba_support addressing;
 
     // disable interrupts on all drives in this channel
     ide_write(dev->channel, ATA_REG_CONTROL, channels[dev->channel].interrupt = (ide_irq_invoked = 0x0) + 0x02);
@@ -415,10 +416,14 @@ void pio_read(struct ide_device *dev, uint32_t sector, char *buffer, uint32_t by
     // becuase their function does both in and out
     // and attempts to account for DMA
     int command = 0x00;
-    if (addressing == LBA48) {
+    if ((addressing == LBA48) && (rw == READ)) {
         command = ATA_CMD_READ_PIO_EXT;
-    } else {
+    } else if ((addressing == LBA28) && (rw == READ)) {
         command = ATA_CMD_READ_PIO;
+    } else if ((addressing == LBA48) && (rw == WRITE)) {
+        command = ATA_CMD_WRITE_PIO_EXT;
+    } else if ((addressing == LBA28) && (rw == WRITE)) {
+        command = ATA_CMD_WRITE_PIO;
     }
     ide_write(dev->channel, ATA_REG_COMMAND, command);
 
@@ -428,16 +433,66 @@ void pio_read(struct ide_device *dev, uint32_t sector, char *buffer, uint32_t by
 
     // for loop for number of bytes to read
 
+    int status = ide_polling(dev->channel, 1);                          // poll and check status of device
+    while (!(ide_read(dev->channel, ATA_REG_STATUS) & ATA_SR_DRQ)); // while data request not ready
 
-    int val = ide_read(dev->channel, ATA_CMD_IDENTIFY);
+    // if there is no device error
+    if (!status) {
+        if (rw == READ) {
+            uint16_t data;
+            int bytestoread = 0;
+            int numzeroes = 0;
 
-    c_printf("\ntesting lba types %d\n", val);
-    // sanity check -- this should never fail
-    // check if device supports lba28
+            if (bytes % 2 == 1) {
+                //  pad odd number of bytes with zeroes
+                bytestoread = (bytes + 1)/2;
+            } else {
+                bytestoread = bytes/2;
+            }
 
+            numzeroes = 256 - bytestoread;
 
-    // configure lba28
+            // read in bytes into data and write to buffer
+            for (int i = 0; i < bytestoread; i++) {
+                data = __inw( channels[dev->channel].base );
+                (buffer)[2*i] = (uint8_t)data;
+                (buffer)[(2*i)+1] = (uint8_t)(data >> 8);
+            }
 
+            // pad for as many zeroes at we need to
+            for (int i = 0; i < numzeroes; i++) {
+                __inw( channels[dev->channel].base );
+                (buffer)[2*i] = 0x00;
+                (buffer)[(2*i)+1] = 0x00;
+            }
+        } else if (rw == WRITE) {
+            int bytestowrite = 0;
+            int numzeroes = 0;
+
+            if (bytes % 2 == 1) {
+                //  pad odd number of bytes with zeroes
+                bytestowrite = (bytes + 1)/2;
+            } else {
+                bytestowrite = bytes/2;
+            }
+
+            numzeroes = 256 - bytestowrite;
+
+            // write bytes out to device
+            for (int i = 0; i < bytestowrite; i++) {
+                __outw(channels[dev->channel].base, buffer[i]);
+            }
+
+            // pad zeroes
+            for (int i = 0; i < numzeroes; i++) {
+                __outw(channels[dev->channel].base, 0);
+            }
+        }
+
+    }
+    else {
+        c_printf("device busy, %s failed", rw);
+    }
 }
 
 //void ide_read_sectors(unsigned char drive, unsigned char numsects, unsigned int lba,

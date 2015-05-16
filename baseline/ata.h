@@ -123,6 +123,7 @@ extern unsigned char ide_irq_invoked;
 
 // forward declare struct
 struct ide_device;
+enum pio_direction;
 
 int _ata_modinit(void);
 unsigned char ide_read(unsigned char channel, unsigned char reg);
@@ -131,7 +132,7 @@ void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buff
 uint8_t ide_polling(uint8_t channel, uint32_t advanced_check);
 void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4);
 void dev_summary(void);
-void pio_read(struct ide_device *dev, uint32_t sectors, char *buffer, uint32_t bytes);
+void ata_pio_rw(struct ide_device *dev, uint32_t sectors, uint8_t *buffer, uint32_t bytes, enum pio_direction rw);
 
 
 
