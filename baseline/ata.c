@@ -33,9 +33,6 @@ struct ide_device {
     uint8_t model[41];      // Model in string.
 } ide_devices[4];
 
-enum lba_support { LBA48, LBA28, CHS };
-enum pio_direction { READ, WRITE };
-
 uint8_t ide_buf[2048] = {0};
 unsigned char ide_irq_invoked = 0;
 
@@ -60,7 +57,7 @@ int _ata_modinit() {
 #endif
 
     ide_initialize(0x1f0, 0x3f6, 0x170, 0x376, 0x000);
-    pio_write_lba(&ide_devices[0], 512, "test", 512);
+    //pio_write_lba(&ide_devices[0], 512, "test", 512);
     dev_summary();
 
     //uint16_t command = pci_read_command(*ide);
@@ -107,45 +104,45 @@ void ide_write(uint8_t channel, uint8_t reg, uint8_t data) {
         ide_write(channel, ATA_REG_CONTROL, 2);
 }
 
-void ide_read_bufb(uint8_t channel, uint8_t reg, uint8_t *buffer, int bufsize) {
+void ide_read_bufb(uint8_t channel, uint8_t *buffer, int bufsize) {
     for (int i = 0; i < bufsize; i++) {
         buffer[i] = __inb(channels[channel].base);
     }
 }
 
-void ide_read_bufw(uint8_t channel, uint8_t reg, uint16_t *buffer, int bufsize) {
+void ide_read_bufw(uint8_t channel, uint16_t *buffer, int bufsize) {
     for (int i = 0; i < bufsize; i++) {
         buffer[i] = __inw(channels[channel].base);
     }
 }
 
-void ide_read_bufl(uint8_t channel, uint8_t reg, uint32_t *buffer, int bufsize) {
+void ide_read_bufl(uint8_t channel, uint32_t *buffer, int bufsize) {
     for (int i = 0; i < bufsize; i++) {
         buffer[i] = __inl(channels[channel].base);
     }
 }
 
-void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer,
-        unsigned int quads) {
-    /* WARNING: This code contains a serious bug. The inline assembly trashes ES and
-     *           ESP for all of the code the compiler generates between the inline
-     *           assembly blocks.
-     */
-    if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].interrupt);
-    __asm("pushw %es; movw %ds, %ax; movw %ax, %es");
-    if (reg < 0x08)
-        __inl(channels[channel].base  + reg - 0x00, buffer, quads);
-    else if (reg < 0x0C)
-        __inl(channels[channel].base  + reg - 0x06, buffer, quads);
-    else if (reg < 0x0E)
-        __inl(channels[channel].ctrl + reg - 0x0A, buffer, quads);
-    else if (reg < 0x16)
-        __inl(channels[channel].bmide + reg - 0x0E, buffer, quads);
-    __asm("popw %es;");
-    if (reg > 0x07 && reg < 0x0C)
-        ide_write(channel, ATA_REG_CONTROL, channels[channel].interrupt);
-}
+//void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer,
+//        unsigned int quads) {
+//    /* WARNING: This code contains a serious bug. The inline assembly trashes ES and
+//     *           ESP for all of the code the compiler generates between the inline
+//     *           assembly blocks.
+//     */
+//    if (reg > 0x07 && reg < 0x0C)
+//        ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].interrupt);
+//    __asm("pushw %es; movw %ds, %ax; movw %ax, %es");
+//    if (reg < 0x08)
+//        __inl(channels[channel].base  + reg - 0x00, buffer, quads);
+//    else if (reg < 0x0C)
+//        __inl(channels[channel].base  + reg - 0x06, buffer, quads);
+//    else if (reg < 0x0E)
+//        __inl(channels[channel].ctrl + reg - 0x0A, buffer, quads);
+//    else if (reg < 0x16)
+//        __inl(channels[channel].bmide + reg - 0x0E, buffer, quads);
+//    __asm("popw %es;");
+//    if (reg > 0x07 && reg < 0x0C)
+//        ide_write(channel, ATA_REG_CONTROL, channels[channel].interrupt);
+//}
 
 uint8_t ide_polling(uint8_t channel, uint32_t advanced_check) {
 
@@ -293,7 +290,7 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
                     //
                     c_printf("Read identification space");
                     //ide_read_buffer(chan, ATA_REG_DATA, (uint32_t *)ide_buf, 128);
-                    ide_read_bufl(chan, ATA_REG_DATA, (uint32_t *)ide_buf, 128);
+                    ide_read_bufl(chan, (uint32_t *)ide_buf, 128);
 
                     c_printf("read buffer 32!");
 
