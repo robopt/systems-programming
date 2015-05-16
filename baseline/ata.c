@@ -273,7 +273,7 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
                         uint8_t low = ide_read(chan, ATA_REG_LBA1);
                         uint8_t high = ide_read(chan, ATA_REG_LBA2);
 
-                        if ( low == 0x14 && high == 0xEB)
+                        if (low == 0x14 && high == 0xEB)
                             type = ATA_TYPE_ATAPI;
                         else if (low == 0x69 && high == 0x96)
                             type = ATA_TYPE_ATAPI;
@@ -511,16 +511,21 @@ int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes)
 
 void rw_test() {
     uint8_t data[512];
+    char *string = "welcome 1 2 3\n";   // interesting --
+                                        // alpha characters are sized as 1 unit
+                                        // spaces as 4
+                                        // numbers as 2
 
     for (int dev = 0; dev < 4; dev++) {
         // if IDE device is valid
         if (ide_devices[dev].reserved == 1) {
-            c_printf("device #%d", dev);
-            disk_write(&ide_devices[dev], 1, (uint8_t *)"testing 1 2 3\n\0", 16);
+            c_printf("device #%d\n", dev);
+            disk_write(&ide_devices[dev], 1, (uint8_t *)string, 48);
+            //c_printf("finished writing\n");
 
-            read_sector(&ide_devices[dev], 0, data);
-            for (int i = 0; i < 20; i++ ) {
-                c_printf("%c", data[i]);
+            read_sector(&ide_devices[dev], 1, data);
+            for (int i = 0; i < 26; i++ ) {
+                c_printf("%d-%c\n", i, data[i]);
                 data[i] = 0;
             }
         }

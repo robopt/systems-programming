@@ -126,13 +126,6 @@ struct ide_device;
 enum lba_support { LBA48, LBA28, CHS };
 enum pio_direction { READ, WRITE };
 
-// forward declare register byte operations
-uint8_t __inb(uint8_t);
-uint16_t __inw(uint8_t);
-uint32_t __inl(uint8_t);
-void __outb(uint8_t, uint8_t);
-void __outw(uint8_t, uint16_t);
-
 int _ata_modinit(void);
 unsigned char ide_read(unsigned char channel, unsigned char reg);
 void ide_write(unsigned char channel, unsigned char reg, unsigned char data);
