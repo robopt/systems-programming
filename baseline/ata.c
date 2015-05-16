@@ -4,11 +4,11 @@
 // and http://www.ata-atapi.com/atadrvr.html
 
 #include "ata.h"
+#include "klib.h"
 #include "pci.h"
-#include "x86arch.h"
 #include "support.h"
 #include "ulib.h"
-#include "klib.h"
+#include "x86arch.h"
 
 #define _ata_debug_
 #ifdef  _ata_debug_
@@ -24,9 +24,9 @@
  *                  Note that we do not use the bus master IDE for functionality.
 */
 static struct ata_channel {
-    uint32_t base;      // base port for cmd registers
-    uint32_t ctrl;      // base port for ctrl registers
-    uint32_t bmide;     // bus master IDE
+    uint32_t base;          // base port for cmd registers
+    uint32_t ctrl;          // base port for ctrl registers
+    uint32_t bmide;         // bus master IDE
     uint8_t  interrupt;
 } channels[2];
 
@@ -121,6 +121,7 @@ uint8_t ide_read(uint8_t channel, uint8_t reg) {
 
     if (reg > 0x07 && reg < 0x0C) {
         ide_write(channel, ATA_REG_CONTROL, 0x82);
+        // 0x82 is the value of 0x80 and the interrupt disable
     }
 
     if (reg < 0x08) {
@@ -140,20 +141,41 @@ uint8_t ide_read(uint8_t channel, uint8_t reg) {
     return result;
 }
 
-
+/*
+ *  Name:           ide_write
+ *
+ *  Description:    Write directly to the IDE device registers. Helps configure
+ *                  the device with specific settings, such as disabling
+ *                  interrupts and such.
+ *
+ *                  Note: This code was from primarily from the OSDev wiki page:
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *
+ *  Arguments:      channel:    channel which the disk is located at
+ *                  reg:        device register that we want to write to
+ *
+ *  Return:         nothing (void)
+*/
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data) {
-    if (reg > 0x07 && reg < 0x0C)
+
+    if (reg > 0x07 && reg < 0x0C) {
         ide_write(channel, ATA_REG_CONTROL, 0x82);
-    if (reg < 0x08)
+        // 0x82 is the value of 0x80 and the interrupt disable
+    }
+
+    if (reg < 0x08) {
         __outb(channels[channel].base  + reg - 0x00, data);
-    else if (reg < 0x0C)
+    } else if (reg < 0x0C) {
         __outb(channels[channel].base  + reg - 0x06, data);
-    else if (reg < 0x0E)
+    } else if (reg < 0x0E) {
         __outb(channels[channel].ctrl  + reg - 0x0A, data);
-    else if (reg < 0x16)
+    } else if (reg < 0x16) {
         __outb(channels[channel].bmide + reg - 0x0E, data);
-    if (reg > 0x07 && reg < 0x0C)
+    }
+
+    if (reg > 0x07 && reg < 0x0C) {
         ide_write(channel, ATA_REG_CONTROL, 2);
+    }
 }
 
 void ide_read_bufb(uint8_t channel, uint8_t *buffer, int bufsize) {
