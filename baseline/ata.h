@@ -38,9 +38,9 @@
 #define ATA_DRIVEHEAD_LBA       0x40
 
 // base port addresses
-#define ATA_PRIMARY_CTRL_BASE   0x3f0
+#define ATA_PRIMARY_CTRL_BASE   0x3f6
 #define ATA_PRIMARY_CMD_BASE    0x1f0
-#define ATA_SECONDARY_CTRL_BASE 0x370
+#define ATA_SECONDARY_CTRL_BASE 0x376
 #define ATA_SECONDARY_CMD_BASE  0x170
 
 // Register offsets
