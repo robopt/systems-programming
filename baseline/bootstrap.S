@@ -102,8 +102,15 @@ diskok:
 	call	readprog
 
 /*
-** We've got the second block of the bootstrap program in memory. Now
-** read all of the user's program blocks.  Use %di to point to the
+** We've got the second block of the bootstrap program in memory.
+**
+** Past this point, we need to access higher memory addresses to load the user
+** program. Therefore, we have to enable unreal mode.
+*/
+	call	switch_unreal
+
+/*
+** Now read all of the user's program blocks.  Use %di to point to the
 ** count field for the next block to load.
 */
 	movw	$firstcount, %di
@@ -209,7 +216,7 @@ done_loading:
 	movw	$msg_go, %si	/* last status message */
 	call	dispMsg
 
-	jmp	switch		/* move to the next phase */
+	jmp	finish		/* move to the next phase */
 
 /*
 ** Support routine - display a message byte by byte to the monitor.
@@ -287,29 +294,61 @@ drive:	.word	0x80	/* 0x80 = usb */
 boot_sig:
 	.word 0xAA55
 
-/*
-** Startup code.
-**
-** This code configures the GDT, enters protected mode, and then
-** transfers to the OS entry point.
+/**
+** Switches to unreal mode. A lot of this code was previously done after the
+** entire program was loaded, but we have to do it before in order to access
+** high memory.
 */
+switch_unreal:
+	pushw	%es		/* save es */
+	pushw	%ds		/* save ds */
 
-switch:
 	cli
 	movb	$0x80, %al	/* disable NMIs */
 	outb	%al, $0x70
 
 	call	enable_A20
-	call	move_gdt
 	call	check_mem
+	call	move_gdt
+
+	lgdt	gdt_48 + BOOT_ADDRESS
+
+	movl	%cr0, %eax	/* get current CR0 */
+	orl	$1, %eax	/* set the PE bit */
+	movl	%eax, %cr0	/* and store it back. */
+
+	nop			/* one-instruction delay */
+	nop			/* two for good measure */
+
+	movw	$GDT_DATA, %bx	/* select data descriptor from GDT */
+	movw	%bx, %ds	/* and let %ds, %es access all of memory */
+	movw	%bx, %es
+
+	andl	$0xFFFE, %eax	/* turn off PE bit */
+	movl	%eax, %cr0	/* and store it back. */
+
+	movb	$0x00, %al	/* enable NMIs */
+	outb	%al, $0x70
+	sti
+
+	popw	%ds		/* use old ds */
+	popw	%es		/* use old es */
+	ret
 
 /*
-** The IDTR and GDTR are loaded relative to this segment, so we must
-** use the full offsets from the beginning of the segment (0000:0000);
-** however, we were loaded at 0000:7c00, so we need to add that in.
+** Startup code.
+**
+** This code enters protected mode, and then transfers to the OS entry point.
 */
+finish:
+	cli
+	movb	$0x80, %al	/* disable NMIs */
+	outb	%al, $0x70
+
+	movw	%cs, %si
+	movw	%si, %ds	/* fix ds because that causes errors? */
+
 	lidt	idt_48 + BOOT_ADDRESS
-	lgdt	gdt_48 + BOOT_ADDRESS
 
 	movl	%cr0, %eax	/* get current CR0 */
 	orl	$1, %eax	/* set the PE bit */
@@ -413,8 +452,6 @@ move_gdt:
 ** Determine the amount of physical memory available to the system.
 */
 check_mem:
-	pushw	%ax
-	pushw	%ds
 	movw	$MMAP_SEGMENT, %ax
 	movw	%ax, %ds	  /* Write relative to the memory map start */
 	movw	$0xE801, %ax	  /* Get memory size for >64M configurations */
@@ -423,8 +460,6 @@ check_mem:
 	movw	%bx, MMAP_EXT_HI  /* extended memory > 16M in 64K blocks */
 	movw	%cx, MMAP_CFG_LO  /* configured memory between 1M - 16M in K */
 	movw	%dx, MMAP_CFG_HI  /* configured memory > 16M in 64K blocks */
-	popw	%ds
-	popw	%ax
 	ret
 
 /*
