@@ -139,7 +139,7 @@ void ide_read_bufl(uint8_t channel, uint32_t *buffer, int bufsize);
 uint8_t ide_polling(uint8_t channel);
 uint8_t ide_print_error(uint8_t drive, uint8_t err);
 
-void ide_initialize(uint8_t BAR0, uint8_t BAR1, uint8_t BAR2, uint8_t BAR3, uint8_t BAR4);
+void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4);
 void dev_summary(void);
 
 int ata_pio_rw(struct ide_device *dev, uint32_t sectors, uint8_t *buffer, uint32_t bytes, enum pio_direction rw);

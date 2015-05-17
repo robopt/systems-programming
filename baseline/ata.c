@@ -93,7 +93,7 @@ int _ata_modinit() {
 #endif
 
     // initialize IDE drives
-    ide_initialize( (uint8_t)ATA_PRIMARY_CMD_BASE, (uint8_t)ATA_PRIMARY_CTRL_BASE, (uint8_t)ATA_SECONDARY_CMD_BASE, (uint8_t)ATA_SECONDARY_CTRL_BASE, 0x000);
+    ide_initialize( ATA_PRIMARY_CMD_BASE, ATA_PRIMARY_CTRL_BASE, ATA_SECONDARY_CMD_BASE, ATA_SECONDARY_CTRL_BASE, 0x000);
 
     dev_summary();      // print out drive summary
     rw_test();          // test driver by writing to and reading from disk
@@ -317,6 +317,20 @@ uint8_t ide_polling(uint8_t channel) {
 
 }
 
+/*
+ *  Name:           ide_print_error
+ *
+ *  Description:    Print information about the device error if an error was encountered.
+ *
+ *                  Note: This code structure was from primarily from the OSDev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *
+ *  Arguments:      drive:      drive index in ide_devices array
+ *                  err:        err status code read from register
+ *
+ *  Return:         uint8_t:    same as err value
+*/
 uint8_t ide_print_error(uint8_t drive, uint8_t err) {
     if (err == 0)
         return err;
@@ -343,7 +357,7 @@ uint8_t ide_print_error(uint8_t drive, uint8_t err) {
     return err;
 }
 
-void ide_initialize(uint8_t BAR0, uint8_t BAR1, uint8_t BAR2, uint8_t BAR3, uint8_t BAR4) {
+void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4) {
 
     int device_count = 0;
 
@@ -628,6 +642,7 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     }
     else {
         c_printf("device busy, %s failed", rw);
+        ide_print_error(0, status);
         return status;
     }
 
@@ -666,7 +681,7 @@ void rw_test() {
 
             read_sector(&ide_devices[dev], 1, data);
             for (int i = 0; i < 26; i++ ) {
-                c_printf("%d-%c\n", i, data[i]);
+                c_printf("%d-%c ", i, data[i]);
                 data[i] = 0;
             }
         }
