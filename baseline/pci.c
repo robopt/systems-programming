@@ -9,7 +9,7 @@
 #include "types.h"
 #include "startup.h"
 #include "support.h"
-#define _pci_debug_
+//#define _pci_debug_
 #ifdef _pci_debug_
 #include "c_io.h"
 #endif

@@ -20,7 +20,7 @@
 #include "ulib.h"
 #include "x86arch.h"
 
-#define _ata_debug_
+//#define _ata_debug_
 #ifdef  _ata_debug_
 #include "c_io.h"
 #endif

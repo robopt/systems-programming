@@ -3,7 +3,7 @@
 #include "x86arch.h"
 #include "support.h"
 
-#define _net_debug_
+//#define _net_debug_
 #ifdef _net_debug_
 #include "c_io.h"
 #endif
