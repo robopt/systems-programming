@@ -234,42 +234,6 @@ getOut:				/* we're done, so return */
 	ret
 
 /*
-** Move the GDT entries from where they are to location 0000:0000
-**
-** As with the IDTR and GDTR loads, we need the offset for the GDT
-** data from the beginning of the segment (0000:0000).
-*/
-move_gdt:
-	movw	%cs, %si
-	movw	%si, %ds
-	movw	$start_gdt + BOOT_ADDRESS, %si
-	movw	$GDT_SEGMENT, %di
-	movw	%di, %es
-	xorw	%di, %di
-	movl	$gdt_len, %ecx
-	cld
-	rep	movsb
-	ret
-
-/*
-** Determine the amount of physical memory available to the system.
-*/
-check_mem:
-	pushw	%ax
-	pushw	%ds
-	movw	$MMAP_SEGMENT, %ax
-	movw	%ax, %ds	  /* Write relative to the memory map start */
-	movw	$0xE801, %ax	  /* Get memory size for >64M configurations */
-	int	$0x15
-	movw	%ax, MMAP_EXT_LO  /* extended memory between 1M - 16M in K */
-	movw	%bx, MMAP_EXT_HI  /* extended memory > 16M in 64K blocks */
-	movw	%cx, MMAP_CFG_LO  /* configured memory between 1M - 16M in K */
-	movw	%dx, MMAP_CFG_HI  /* configured memory > 16M in 64K blocks */
-	popw	%ds
-	popw	%ax
-	ret
-
-/*
 ** DATA AREAS.
 **
 ** Next sector number and head number to read from.
@@ -298,21 +262,6 @@ err_diskstatus:
 	.asciz "Disk not ready.\n\r"
 err_diskread:
 	.asciz "Read failed\n\r"
-
-/*
-** Data areas.
-*/
-
-/*
-** The GDTR and IDTR contents.
-*/
-gdt_48:
-	.word	0x2000		/* 1024 GDT entries x 8 bytes/entry = 8192 */
-	.quad	GDT_ADDRESS
-
-idt_48:
-	.word	0x0800		/* 256 interrupts */
-	.quad	IDT_ADDRESS
 
 /*
 ** Originally, the GDT contents were here.  When booting from a floppy
@@ -441,6 +390,53 @@ wait2_loop:
 	jmp	a20wait2
 wait2_exit:
 	ret
+
+/*
+** Move the GDT entries from where they are to location 0000:0000
+**
+** As with the IDTR and GDTR loads, we need the offset for the GDT
+** data from the beginning of the segment (0000:0000).
+*/
+move_gdt:
+	movw	%cs, %si
+	movw	%si, %ds
+	movw	$start_gdt + BOOT_ADDRESS, %si
+	movw	$GDT_SEGMENT, %di
+	movw	%di, %es
+	xorw	%di, %di
+	movl	$gdt_len, %ecx
+	cld
+	rep	movsb
+	ret
+
+/*
+** Determine the amount of physical memory available to the system.
+*/
+check_mem:
+	pushw	%ax
+	pushw	%ds
+	movw	$MMAP_SEGMENT, %ax
+	movw	%ax, %ds	  /* Write relative to the memory map start */
+	movw	$0xE801, %ax	  /* Get memory size for >64M configurations */
+	int	$0x15
+	movw	%ax, MMAP_EXT_LO  /* extended memory between 1M - 16M in K */
+	movw	%bx, MMAP_EXT_HI  /* extended memory > 16M in 64K blocks */
+	movw	%cx, MMAP_CFG_LO  /* configured memory between 1M - 16M in K */
+	movw	%dx, MMAP_CFG_HI  /* configured memory > 16M in 64K blocks */
+	popw	%ds
+	popw	%ax
+	ret
+
+/*
+** The GDTR and IDTR contents.
+*/
+gdt_48:
+	.word	0x2000		/* 1024 GDT entries x 8 bytes/entry = 8192 */
+	.quad	GDT_ADDRESS
+
+idt_48:
+	.word	0x0800		/* 256 interrupts */
+	.quad	IDT_ADDRESS
 
 /*
 ** The GDT.  This cannot be created in C because the bootstrap is not
