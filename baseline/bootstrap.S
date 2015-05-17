@@ -71,7 +71,7 @@ diskok:
 	movb	$0x80, %dl
 	int	$0x13
 
-	/* get drive parameters to determine number of heads and sectors/track */
+	/* get drive parameters: determine number of sectors/heads/cylinders */
 	xorw	%ax, %ax	/* set ES:DI = 0000:0000 in case of BIOS bugs */
 	movw	%ax, %es
 	movw	%ax, %di
@@ -141,7 +141,7 @@ readprog:
 	pushw	%ax		/* save sector count */
 
 	movw	sec, %cx	/* get sector number */
-	movw	head, %dx	/* get head number */
+	movb	head, %dh	/* get head number */
 	movb	$0x80, %dl
 
 	movw	$0x0201, %ax	/* read 1 sector */
@@ -167,27 +167,30 @@ adjust:
 	movw	%ax, %es
 
 readcont2:
+	movb	%ch, %al	/* mark down cylinder */
+	movb	%cl, %ah
+	shr	$6, %ah
+	andw	$0xC0FF, %ax
+	andw	$0x3F, %cx	/* mark down sector */
+
 	incb	%cl		/* not done - move to the next sector */
-	cmpb	max_sec, %cl	/* only 18 per track - see if we need */
-	jnz	save_sector	/* to switch heads or tracks */
+	cmpb	max_sec, %cl	/* only 18 per cylinder - see if we need */
+	jnz	save_sector	/* to switch heads or cylinders */
 
 	movb	$1, %cl		/* reset sector number */
 	incb	%dh		/* first, switch heads */
 	cmpb	max_head, %dh	/* there are only two - if we've already */
-	jnz	save_sector	/* used both, we need to switch tracks */
+	jnz	save_sector	/* used both, we need to switch cylinders */
 
 	xorb	%dh, %dh	/* reset to head $0 */
-	incb	%ch		/* inc track number */
-	cmpb	$80, %ch	/* 80 tracks per side - have we read all? */
-	jnz	save_sector	/* read another track */
-
-	movw	$err_toobig, %si 	/* report the error */
-	call	dispMsg
-	jmp	.		/* and freeze */
+	incw	%ax		/* inc cylinder number */
 
 save_sector:
+	movb	%al, %ch
+	shl	$6, %ah
+	orb	%ah, %cl	/* put cylinder back into sector count */
 	movw	%cx, sec	/* save sector number */
-	movw	%dx, head	/*   and head number */
+	movb	%dh, head	/*   and head number */
 
 	popw	%ax		/* get the sector count from the stack */
 	decw	%ax		/*   and decrement it. */
@@ -273,8 +276,8 @@ check_mem:
 */
 sec:	.word	2	/* cylinder=0, sector=1 */
 head:	.word	0	/* head=0 */
-max_sec:	.byte	19	/* up to 18 sectors per track */
-max_head:	.byte	2	/* only two r/w heads per drive */
+max_sec:	.byte	0
+max_head:	.byte	0
 
 /*
 ** Status and error messages.
@@ -295,8 +298,6 @@ err_diskstatus:
 	.asciz "Disk not ready.\n\r"
 err_diskread:
 	.asciz "Read failed\n\r"
-err_toobig:
-	.asciz	"Too big\n\r"
 
 /*
 ** Data areas.
