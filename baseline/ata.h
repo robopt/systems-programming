@@ -1,3 +1,18 @@
+/*
+ *  File:           ata.h
+ *
+ *  Author:         Stanley Chan, Claire Charron, Ed Mead
+ *                  Credit to OSDev wiki (http://wiki.osdev.org/PCI_IDE_Controller
+ *                  and http://wiki.osdev.org/ATA_PIO_Mode#Detection_and_Initialization),
+ *                  Reenix (https://github.com/scialex/reenix), code from DOSS 
+ *                  (https://github.com/agargiulo/DOSS/tree/master/disk), and
+ *                  ATA-ATAPI.COM (http://www.ata-atapi.com/atadrvr.html) for
+ *                  providing huge amount of resources, documentation, and help in making this driver
+ *
+ *  Description:    ATA driver to perform configuration, read, and write operations
+ *                  on PATA hard disks.
+*/
+
 #ifndef _ATA_H_
 #define _ATA_H_
 

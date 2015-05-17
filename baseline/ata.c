@@ -1,7 +1,17 @@
-// help from: http://wiki.osdev.org/PCI_IDE_Controller#Read.2FWrite_From_ATA_Drive
-// and https://github.com/agargiulo/DOSS/blob/master/disk/disk.c
-// and https://github.com/scialex/reenix/blob/vfs/kernel/drivers/blockdev/disk/ata.rs
-// and http://www.ata-atapi.com/atadrvr.html
+/*
+ *  File:           ata.c
+ *
+ *  Author:         Stanley Chan, Claire Charron, Ed Mead
+ *                  Credit to OSDev wiki (http://wiki.osdev.org/PCI_IDE_Controller
+ *                  and http://wiki.osdev.org/ATA_PIO_Mode#Detection_and_Initialization),
+ *                  Reenix (https://github.com/scialex/reenix), code from DOSS 
+ *                  (https://github.com/agargiulo/DOSS/tree/master/disk), and
+ *                  ATA-ATAPI.COM (http://www.ata-atapi.com/atadrvr.html) for
+ *                  providing huge amount of resources, documentation, and help in making this driver
+ *
+ *  Description:    ATA driver to perform configuration, read, and write operations
+ *                  on PATA hard disks.
+*/
 
 #include "ata.h"
 #include "klib.h"
@@ -826,5 +836,5 @@ void rw_test() {
         }
     }
 
-    _kpanic("rw_test", "read write finished?!?");
+    //_kpanic("rw_test", "read write finished?!?");
 }
