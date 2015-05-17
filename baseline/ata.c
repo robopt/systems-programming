@@ -823,7 +823,7 @@ int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes)
 */
 void rw_test() {
     uint8_t data[512];
-    char *string = "welcome 1 2 3\n";   // interesting --
+    char *string = "testing in sector 4";   // interesting --
     // alpha characters are sized as 1 unit
     // spaces as 4
     // numbers as 2
@@ -831,14 +831,14 @@ void rw_test() {
     for (int dev = 0; dev < 4; dev++) {
         // if IDE device is valid
         if (ide_devices[dev].reserved == 1) {
-            c_printf("device #%d\n", dev);
-            c_printf("Writing out: \"%s\"\n", string);
-            disk_write(&ide_devices[dev], 1, (uint8_t *)string, 15);
+            c_printf("Device #%d\n", dev);
+            c_printf("    Writing out: \"%s\"\n", string);
+            disk_write(&ide_devices[dev], 4, (uint8_t *)string, 19);
             //c_printf("finished writing\n");
 
-            read_sector(&ide_devices[dev], 1, data);
-            c_printf("Read in:     \"");
-            for (int i = 0; i < 15; i++ ) {
+            read_sector(&ide_devices[dev], 4, data);
+            c_printf("    Read in:     \"");
+            for (int i = 0; i < 19; i++ ) {
                 c_printf("%c", data[i]);
                 //c_printf("%d-%c ", i, data[i]);
                 data[i] = 0;
