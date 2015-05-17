@@ -720,22 +720,90 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     return 0;
 }
 
+/*
+ *  Name:           read_sector
+ *
+ *  Description:    Wrapper around ata_pio_rw to read entire 512 bytes from the sector
+ *
+ *                  Code borrowed largely from https://github.com/agargiulo/DOSS/tree/master/disk
+ *
+ *  Arguments:      struct ide_device *dev: device from ide_devices to perform operation on
+ *                  sector:                 sector of device to perform operation on
+ *                  *buffer:                buffer to read from
+ *
+ *  Return:         int:    0 if no error, otherwise the error status returned from the register
+*/
 int read_sector(struct ide_device *dev, uint32_t sector, uint8_t *buf) {
     return disk_read(dev, sector, buf, 512);
 }
 
+/*
+ *  Name:           disk_read
+ *
+ *  Description:    Wrapper around ata_pio_rw to read a specified amount
+ *                  of bytes from the sector
+ *
+ *                  Code borrowed largely from https://github.com/agargiulo/DOSS/tree/master/disk
+ *
+ *  Arguments:      struct ide_device *dev: device from ide_devices to perform operation on
+ *                  sector:                 sector of device to perform operation on
+ *                  *buffer:                buffer to read from
+ *                  bytes:                  number of bytes to read
+ *
+ *  Return:         int:    0 if no error, otherwise the error status returned from the register
+*/
 int disk_read(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes) {
     return ata_pio_rw(dev, sector, buf, bytes, READ);
 }
 
+/*
+ *  Name:           read_sector
+ *
+ *  Description:    Wrapper around ata_pio_rw to write entire 512 bytes to the sector
+ *
+ *                  Code borrowed largely from https://github.com/agargiulo/DOSS/tree/master/disk
+ *
+ *  Arguments:      struct ide_device *dev: device from ide_devices to perform operation on
+ *                  sector:                 sector of device to perform operation on
+ *                  *buffer:                buffer to write to
+ *
+ *  Return:         int:    0 if no error, otherwise the error status returned from the register
+*/
 int write_sector(struct ide_device *dev, uint32_t sector, uint8_t *buf) {
     return disk_write(dev, sector, buf, 512);
 }
 
+/*
+ *  Name:           disk_write
+ *
+ *  Description:    Wrapper around ata_pio_rw to write a specified amount
+ *                  of bytes to the sector
+ *
+ *                  Code borrowed largely from https://github.com/agargiulo/DOSS/tree/master/disk
+ *
+ *  Arguments:      struct ide_device *dev: device from ide_devices to perform operation on
+ *                  sector:                 sector of device to perform operation on
+ *                  *buffer:                buffer to write to
+ *                  bytes:                  number of bytes to write
+ *
+ *  Return:         int:    0 if no error, otherwise the error status returned from the register
+*/
 int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes) {
     return ata_pio_rw(dev, sector, buf, bytes, WRITE);
 }
 
+/*
+ *  Name:           rw_test
+ *
+ *  Description:    Small test function to check if write and read functionality
+ *                  is working from the driver
+ *
+ *                  Code borrowed largely from https://github.com/agargiulo/DOSS/tree/master/disk
+ *
+ *  Arguments:      none
+ *
+ *  Return:         nothing (void)
+*/
 void rw_test() {
     uint8_t data[512];
     char *string = "welcome 1 2 3\n";   // interesting --
@@ -760,30 +828,3 @@ void rw_test() {
 
     _kpanic("rw_test", "read write finished?!?");
 }
-
-//void ide_read_sectors(unsigned char drive, unsigned char numsects, unsigned int lba,
-//        unsigned short es, unsigned int edi) {
-//
-//    int error = 0x00;
-//
-//    // 1: Check if the drive presents:
-//    // ==================================
-//    if (drive > 3 || ide_devices[drive].reserved == 0) error = 0x1;      // Drive Not Found!
-//
-//    // 2: Check if inputs are valid:
-//    // ==================================
-//    else if (((lba + numsects) > ide_devices[drive].size) && (ide_devices[drive].type == ATA_TYPE_ATA))
-//        error = 0x2;                     // Seeking to invalid position.
-//
-//    // 3: Read in PIO Mode through Polling & IRQs:
-//    // ============================================
-//    else {
-//        //unsigned char err;
-//        if (ide_devices[drive].type == ATA_TYPE_ATA)
-//            error = ide_ata_access(ATA_READ, drive, lba, numsects, es, edi);
-//        else if (ide_devices[drive].type == ATA_TYPE_ATAPI)
-//            for (int i = 0; i < numsects; i++)
-//                error = ide_atapi_read(drive, lba + i, 1, es, edi + (i*2048));
-//        error = ide_print_error(drive, error);
-//    }
-//}
