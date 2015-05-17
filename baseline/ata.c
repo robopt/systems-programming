@@ -524,19 +524,35 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
     }
 }
 
+/*
+ *  Name:           dev_summary
+ *
+ *  Description:    Prints out device details to the console.
+ *
+ *                  Note: this code structure was from primarily from the OSdev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/pci_ide_controller#detecting_ide_drives
+ *
+ *  Arguments:      nothing
+ *
+ *  Return:         nothing (void)
+*/
 void dev_summary() {
     // 4- Print Summary:
     // for ever possible IDE device
     for (int dev = 0; dev < 4; dev++) {
         // if IDE device is valid
         if (ide_devices[dev].reserved == 1) {
-            c_printf("Detected %s device w/ %dMB: %s\n",
+            c_printf("%s device w/ %dMB: %s\n",
                     (const char *[]){"ATA", "ATAPI"}[ide_devices[dev].type],
                     ide_devices[dev].size / 1024 / 2,
                     ide_devices[dev].model);
-            //c_printf("    Signature:    %04x\n", ide_devices[dev].signature);
-            //c_printf("    Capabilities: %04x\n", ide_devices[dev].capabilities);
-            //c_printf("    CommandSets:  %08x\n", ide_devices[dev].commandSets);
+            c_printf("    Channel:      %04x\n", ide_devices[dev].channel);
+            c_printf("    Drive:        %s\n", (const char *[]){"MASTER", "SLAVE"}[ide_devices[dev].drive]);
+            c_printf("    Type:         %s\n", (const char *[]){"ATA", "ATAPI"}[ide_devices[dev].type]);
+            c_printf("    Signature:    %04x\n", ide_devices[dev].signature);
+            c_printf("    Capabilities: %04x\n", ide_devices[dev].capabilities);
+            c_printf("    CommandSets:  %08x\n", ide_devices[dev].commandSets);
         }
     }
 }
