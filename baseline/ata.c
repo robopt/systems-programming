@@ -191,7 +191,7 @@ void ide_write(uint8_t channel, uint8_t reg, uint8_t data) {
  *                  The OSDev code utilized assembly routines that we did not implement
  *                  and also had a caveat of trashing several registers.
  *                  The project at https://github.com/agargiulo/DOSS/tree/master/disk
- *                  improved upone this by splitting the read into different segment sizes.
+ *                  improved upon this by splitting the read into different segment sizes.
  *                  This code was further cleaned up a bit by removing unnecessary parameters.
  *
  *  Arguments:      channel:    channel which the disk is located at
@@ -357,38 +357,68 @@ uint8_t ide_print_error(uint8_t drive, uint8_t err) {
     return err;
 }
 
+/*
+ *  Name:           ide_initialize
+ *
+ *  Description:    Enumerate connected IDE drives and initialize and configure
+ *                  them accordingly. This involves setting it's proper LBA mode
+ *                  as well as initializing an entry in the ide_devices array.
+ *                  Additionally, this is done via polling and does not have interrupts.
+ *
+ *                  Note: This code structure was from primarily from the OSDev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/PCI_IDE_Controller#Detecting_IDE_Drives
+ *                  The project at https://github.com/agargiulo/DOSS/tree/master/disk
+ *                  modified the structure of this code and made it more readable.
+ *                  Reenix also provided insignt into how the devices could be intialized:
+ *                  https://github.com/scialex/reenix/tree/vfs/kernel/drivers/blockdev
+ *                  The resulting function below also omits the ATAPI drive configuration
+ *                  because that was not a goal of this project.
+ *
+ *  Arguments:      BAR0:       Base address of primary I/O channel
+ *                  BAR1:       Base address of primarly I/O channel control port
+ *                  BAR2:       Base address of secondary I/O channel
+ *                  BAR3:       Base address of secondary I/O channel control port
+ *                  BAR4:       Bus master IDE -- assists in DMA transfers, unused in this function
+ *
+ *  Return:         nothing (void)
+*/
 void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4) {
 
     int device_count = 0;
 
-    // 2- Disable IRQs:
-    ide_write(ATA_MASTER, ATA_REG_CONTROL, 2);
-    ide_write(ATA_SLAVE, ATA_REG_CONTROL, 2);
+    // 1- Detect ATA-ATAPI Devices:
 
-    // 3- Detect ATA-ATAPI Devices:
+    // for every device detected when enumerating the PCI bus
     for (int dev = 0; dev < pci_dev_count; dev++) {
         pcidev *device = &pci_devs[dev];
 
+        // and if the device is a PATA mass storage controller
         if (device->classid == (uint8_t) 0x01) {
 
+            // 1- Detect I/O Ports which interface with the IDE Controller
             // configure base I/O port, control, and other registers
             channels[ATA_MASTER].base  = (BAR0 & 0xFFFFFFFC) + 0x1F0 * (!BAR0);
             channels[ATA_MASTER].ctrl  = (BAR1 & 0xFFFFFFFC) + 0x3F6 * (!BAR1);
-            channels[ATA_SLAVE].base  = (BAR2 & 0xFFFFFFFC) + 0x170 * (!BAR2);
-            channels[ATA_SLAVE].ctrl  = (BAR3 & 0xFFFFFFFC) + 0x376 * (!BAR3);
+            channels[ATA_SLAVE].base   = (BAR2 & 0xFFFFFFFC) + 0x170 * (!BAR2);
+            channels[ATA_SLAVE].ctrl   = (BAR3 & 0xFFFFFFFC) + 0x376 * (!BAR3);
             channels[ATA_MASTER].bmide = (BAR4 & 0xFFFFFFFC) + 0; // Bus Master IDE
-            channels[ATA_SLAVE].bmide = (BAR4 & 0xFFFFFFFC) + 8; // Bus Master IDE
+            channels[ATA_SLAVE].bmide  = (BAR4 & 0xFFFFFFFC) + 8; // Bus Master IDE
 
+            // 2- Disable IRQs:
+            // OSDev wiki and other resources performed initialization primarily with polling
             ide_write(ATA_PRIMARY, ATA_REG_CONTROL, 2);
             ide_write(ATA_SECONDARY, ATA_REG_CONTROL, 2);
 
+            // for every channel on the controller
             for (int chan = 0; chan < 2; chan++) {
+                // and for every device located on the channel
                 for (int dev_on_chan = 0; dev_on_chan < 2; dev_on_chan++) {
                     uint8_t err = 0;
                     uint8_t type = ATA_TYPE_ATA;
                     uint8_t status;
 
-                    ide_devices[device_count].reserved = 0; // Assuming that there is no drive
+                    ide_devices[device_count].reserved = 0; // Drive does not exist
 
                     // (I) Select drive
                     ide_write(chan, ATA_REG_HDDEVSEL, 0xa0 | (dev_on_chan << 4) );
@@ -404,26 +434,31 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
                     }
 
                     // (III) Polling
+                    // wait until the device is ready for configuration
                     while (1) {
                         status = ide_read(chan, ATA_REG_STATUS);
 
                         if (status & ATA_SR_ERR) {
                             err = 1;        // if err, device is not ATA
-                            c_printf("\nerror\n");
+                            //c_printf("\nerror\n");
                             break;
                         }
 
                         if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) {
-                            c_printf("\nready\n");
+                            //c_printf("\nready\n");
                             break;          // everything is okay
                         }
 
                         //c_printf("Error status is %d\nstill in poll\n", err);
 
                     }
-                    c_printf("check polling status");
+                    //c_printf("check polling status");
 
                     // (IV) Probe for ATAPI devices
+                    // even though we do not have ATAPI drivers, we still must
+                    // configure them accordingly such that their entry on
+                    // ide_devices is properly managed
+
                     if (err != 0) {
                         uint8_t low = ide_read(chan, ATA_REG_LBA1);
                         uint8_t high = ide_read(chan, ATA_REG_LBA2);
@@ -440,12 +475,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
                     }
 
                     // (V) Read identification space of the device
-                    //
-                    c_printf("Read identification space");
-                    //ide_read_buffer(chan, ATA_REG_DATA, (uint32_t *)ide_buf, 128);
                     ide_read_bufl(chan, (uint32_t *)ide_buf, 128);
-
-                    c_printf("read buffer 32!");
 
                     // (VI) Read device parameters
                     ide_devices[device_count].reserved     = 1;
@@ -460,15 +490,15 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
                     if (ide_devices[device_count].commandSets & (1 << 26)) {
                         // Device uses 48-Bit Addressing:
                         ide_devices[device_count].size   = *((unsigned int *)(ide_buf + ATA_IDENT_MAX_LBA_EXT));
-                        c_printf("get size vii 48 bit");
+                        //c_printf("get size vii 48 bit");
                     }
                     else {
                         // Device uses CHS or 28-bit Addressing:
                         ide_devices[device_count].size   = *((unsigned int *)(ide_buf + ATA_IDENT_MAX_LBA));
-                        c_printf("get size vii chs or 28 bit bit");
+                        //c_printf("get size vii chs or 28 bit bit");
                     }
 
-                    c_printf("get size vii");
+                    //c_printf("get size vii");
 
                     // (VIII) Get model of device
                     for(int str = 0; str < 40; str += 2) {
@@ -478,9 +508,9 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
 
                     ide_devices[device_count].model[40] = 0; // Terminate String.
 
-                    c_printf("%s", ide_devices[device_count].model);
+                    //c_printf("%s", ide_devices[device_count].model);
 
-                    c_printf("get model of device");
+                    //c_printf("get model of device");
 
                     device_count++;
                 }
@@ -504,9 +534,9 @@ void dev_summary() {
                     (const char *[]){"ATA", "ATAPI"}[ide_devices[dev].type],
                     ide_devices[dev].size / 1024 / 2,
                     ide_devices[dev].model);
-            c_printf("    Signature:    %04x\n", ide_devices[dev].signature);
-            c_printf("    Capabilities: %04x\n", ide_devices[dev].capabilities);
-            c_printf("    CommandSets:  %08x\n", ide_devices[dev].commandSets);
+            //c_printf("    Signature:    %04x\n", ide_devices[dev].signature);
+            //c_printf("    Capabilities: %04x\n", ide_devices[dev].capabilities);
+            //c_printf("    CommandSets:  %08x\n", ide_devices[dev].commandSets);
         }
     }
 }
