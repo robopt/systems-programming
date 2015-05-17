@@ -53,8 +53,15 @@ struct ide_device {
     uint8_t drive;          // 0 (Master Drive) or 1 (Slave Drive).
     uint16_t type;          // 0: ATA, 1:ATAPI.
     uint16_t signature;     // Drive Signature
+    uint16_t cylinders;     // Maxtor 6E040L0 has 16383
+    uint16_t heads;         // Maxtor 6E040L0 has 16
+    uint16_t sectors;       // Maxtor 6E040L0 has 63
+    uint16_t serial;
     uint16_t capabilities;  // Features.
+    uint32_t fieldvalid;
+    uint32_t max_lba;       // Maxtor 6E040L0 should be 80293248
     uint32_t commandSets;   // Command Sets Supported.
+    uint32_t max_lba_ext;   // Only useful with drives > 2TB
     uint32_t size;          // Size in Sectors.
     uint8_t model[41];      // Model in string.
 } ide_devices[4];
@@ -488,13 +495,20 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
                     ide_read_bufl(chan, (uint32_t *)ide_buf, 128);
 
                     // (VI) Read device parameters
-                    ide_devices[device_count].reserved     = 1;
-                    ide_devices[device_count].type         = type;
-                    ide_devices[device_count].channel      = chan;
-                    ide_devices[device_count].drive        = dev_on_chan;
-                    ide_devices[device_count].signature    = *((uint16_t *)(ide_buf + ATA_IDENT_DEVICETYPE));
-                    ide_devices[device_count].capabilities = *((uint16_t *)(ide_buf + ATA_IDENT_CAPABILITIES));
-                    ide_devices[device_count].commandSets  = *((uint32_t *)(ide_buf + ATA_IDENT_COMMANDSETS));
+                    ide_devices[device_count].reserved      = 1;
+                    ide_devices[device_count].type          = type;
+                    ide_devices[device_count].channel       = chan;
+                    ide_devices[device_count].drive         = dev_on_chan;
+                    ide_devices[device_count].signature     = *((uint16_t *)(ide_buf + ATA_IDENT_DEVICETYPE));
+                    ide_devices[device_count].cylinders     = *((uint16_t *)(ide_buf + ATA_IDENT_CYLINDERS));
+                    ide_devices[device_count].heads         = *((uint16_t *)(ide_buf + ATA_IDENT_HEADS));
+                    ide_devices[device_count].sectors       = *((uint16_t *)(ide_buf + ATA_IDENT_SECTORS));
+                    ide_devices[device_count].serial        = *((uint16_t *)(ide_buf + ATA_IDENT_SERIAL));
+                    ide_devices[device_count].capabilities  = *((uint16_t *)(ide_buf + ATA_IDENT_CAPABILITIES));
+                    ide_devices[device_count].fieldvalid    = *((uint32_t *)(ide_buf + ATA_IDENT_FIELDVALID));
+                    ide_devices[device_count].max_lba       = *((uint32_t *)(ide_buf + ATA_IDENT_MAX_LBA));
+                    ide_devices[device_count].commandSets   = *((uint32_t *)(ide_buf + ATA_IDENT_COMMANDSETS));
+                    ide_devices[device_count].max_lba_ext   = *((uint32_t *)(ide_buf + ATA_IDENT_MAX_LBA_EXT));
 
                     // (VII) Get addressing size
                     if (ide_devices[device_count].commandSets & (1 << 26)) {
@@ -552,16 +566,28 @@ void dev_summary() {
     for (int dev = 0; dev < 4; dev++) {
         // if IDE device is valid
         if (ide_devices[dev].reserved == 1) {
-            c_printf("%s device w/ %dMB: %s\n",
+
+            // disk is divided into 512 byte sectors
+            // dev->size returns max_lba, which is 2x the bytes (for the sector split), so divide by 2
+            // divide by 1024 to get megabytes, again for gigabytes
+            c_printf("%s device w/ %dGB: %s\n",
                     (const char *[]){"ATA", "ATAPI"}[ide_devices[dev].type],
-                    ide_devices[dev].size / 1024 / 2,
+                    ide_devices[dev].size / 1024 / 1024 / 2,
                     ide_devices[dev].model);
             c_printf("    Channel:      %04x\n", ide_devices[dev].channel);
-            c_printf("    Drive:        %s\n", (const char *[]){"MASTER", "SLAVE"}[ide_devices[dev].drive]);
-            c_printf("    Type:         %s\n", (const char *[]){"ATA", "ATAPI"}[ide_devices[dev].type]);
+            c_printf("    Drive:        %s\n",   (const char *[]){"MASTER", "SLAVE"}[ide_devices[dev].drive]);
+            c_printf("    Type:         %s\n",   (const char *[]){"ATA", "ATAPI"}[ide_devices[dev].type]);
             c_printf("    Signature:    %04x\n", ide_devices[dev].signature);
             c_printf("    Capabilities: %04x\n", ide_devices[dev].capabilities);
             c_printf("    CommandSets:  %08x\n", ide_devices[dev].commandSets);
+            c_printf("    Cylinders:    %d\n",   ide_devices[dev].cylinders);
+            c_printf("    Heads:        %d\n",   ide_devices[dev].heads);
+            c_printf("    Sectors:      %d\n",   ide_devices[dev].sectors);
+            c_printf("    Serial:       %d\n",   ide_devices[dev].serial);
+            c_printf("    FieldValid:   %08x\n", ide_devices[dev].fieldvalid);
+            c_printf("    Max LBA:      %d\n",   ide_devices[dev].max_lba);
+            c_printf("    Extended LBA: %d\n",   ide_devices[dev].max_lba_ext);
+
         }
     }
 }
@@ -661,53 +687,34 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     int status = ide_polling(dev->channel);                             // poll and check status of device
     while (!(ide_read(dev->channel, ATA_REG_STATUS) & ATA_SR_DRQ));     // while data request not ready
 
-    // if there is no device error
+    // if there is no error
     if (!status) {
         // perform READ operation
         if (rw == READ) {
             uint16_t data;
-            int bytestoread = 0;
-            int numzeroes = 0;
-
-            if (bytes % 2 == 1) {
-                //  pad odd number of bytes with zeroes
-                bytestoread = (bytes + 1)/2;
-            } else {
-                bytestoread = bytes/2;
-            }
-
-            numzeroes = 256 - bytestoread;
 
             // read in bytes into data and write to buffer
-            for (int i = 0; i < bytestoread; i++) {
+            for (unsigned int i = 0; i < bytes; i++) {
                 data = __inw( channels[dev->channel].base );
-                (buffer)[2*i] = (uint8_t)data;
-                (buffer)[(2*i)+1] = (uint8_t)(data >> 8);
+                (buffer)[i] = (uint8_t)data;
             }
 
-            // pad for as many zeroes at we need to
-            for (int i = 0; i < numzeroes; i++) {
-                __inw( channels[dev->channel].base );
-                (buffer)[2*i] = 0x00;
-                (buffer)[(2*i)+1] = 0x00;
-            }
+            buffer[bytes] = 0;
+
         } else if (rw == WRITE) {
             // otherwise, perform WRITE operation
 
-            int bytestowrite = 0;
             int numzeroes = 0;
 
             if (bytes % 2 == 1) {
                 //  pad odd number of bytes with zeroes
-                bytestowrite = (bytes + 1)/2;
+                numzeroes = 256 - (bytes + 1)/2;
             } else {
-                bytestowrite = bytes/2;
+                numzeroes = 256 - bytes/2;
             }
 
-            numzeroes = 256 - bytestowrite;
-
             // write bytes out to device
-            for (int i = 0; i < bytestowrite; i++) {
+            for (unsigned int i = 0; i < bytes; i++) {
                 __outw(channels[dev->channel].base, buffer[i]);
             }
 
@@ -721,7 +728,7 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     // otherwise, an error has been encountered
     // print out details about it and return that error
     else {
-        c_printf("device busy, %s failed", rw);
+        c_printf("device busy, %s failed", (const char *[]){"READ", "WRITE"}[rw]);
         ide_print_error(0, status);
         return status;
     }
@@ -825,14 +832,18 @@ void rw_test() {
         // if IDE device is valid
         if (ide_devices[dev].reserved == 1) {
             c_printf("device #%d\n", dev);
-            disk_write(&ide_devices[dev], 1, (uint8_t *)string, 48);
+            c_printf("Writing out: \"%s\"\n", string);
+            disk_write(&ide_devices[dev], 1, (uint8_t *)string, 15);
             //c_printf("finished writing\n");
 
             read_sector(&ide_devices[dev], 1, data);
-            for (int i = 0; i < 26; i++ ) {
-                c_printf("%d-%c ", i, data[i]);
+            c_printf("Read in:     \"");
+            for (int i = 0; i < 15; i++ ) {
+                c_printf("%c", data[i]);
+                //c_printf("%d-%c ", i, data[i]);
                 data[i] = 0;
             }
+            c_printf("\"\n");
         }
     }
 
