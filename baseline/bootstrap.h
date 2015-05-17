@@ -51,6 +51,11 @@
 #define	MMAP_SECTORS	0x10	/* table of sector counts for each program */
 
 /*
+** Temporary space for BIOS to copy data (0000:3000 - 0000:3200)
+*/
+#define	TEMPRD_ADDR	0x00003000
+
+/*
 ** Page map flags
 */
 #define	PAGE_PRESENT		0x01

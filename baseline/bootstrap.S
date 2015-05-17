@@ -105,11 +105,17 @@ diskok:
 ** We've got the second block of the bootstrap program in memory.
 **
 ** Past this point, we need to access higher memory addresses to load the user
-** program. Therefore, we have to enable unreal mode.
+** program. We're going to have to enable protected mode, so, we need to do a
+** few things ahead of time.
 */
 	movw	$1, part2
 
-	call	switch_unreal
+	pushw	%ds
+	call	enable_A20
+	call	check_mem
+	call	move_gdt
+	lgdt	gdt_48 + BOOT_ADDRESS
+	popw	%ds
 
 /*
 ** Now read all of the user's program blocks.  Use %di to point to the
@@ -137,9 +143,9 @@ nextblock:
 	xorl	%ebx, %ebx
 	movw	(%di), %bx	/* get the address offset */
 	subw	$2, %di
-	pushw	%di		/* save di */
+	pushl	%edi		/* save di */
 	call	readprog	/* read this program block, */
-	popw	%di		/* and restore di */
+	popl	%edi		/* and restore di */
 	jmp	nextblock	/*   then go back and read the next one. */
 
 /*
@@ -175,7 +181,22 @@ copydata:
 	testb	%al, %al
 	jz	donecopy		/* if we're on part 2 */
 	popl	%ebx			/* get destination offset */
+	movl	%ebx, %edi
 	popw	%es			/* get destination segment */
+
+	movw	%es, %ax		/* get original %es */
+	movzwl	%ax, %eax
+	shll	$4, %eax		/* multiply by 16 */
+	addl	%eax, %edi		/* add to %edi to get actual address */
+
+	movl	$TEMPRD_ADDR, %esi	/* get source address */
+
+	pushl	%ecx
+	movl	$SECTOR_SIZE, %ecx	/* get count of bytes */
+	call	copy_protected
+	popl	%ecx
+
+	xorl	%esi, %esi
 
 donecopy:
 	movw	$msg_dot, %si		/* print status: a dot */
@@ -319,11 +340,11 @@ boot_sig:
 	.word 0xAA55
 
 /**
-** Switches to unreal mode. A lot of this code was previously done after the
-** entire program was loaded, but we have to do it before in order to access
-** high memory.
+** Switches to protected mode and copies over the data for the OS. A lot of this
+** code was previously done after the entire program was loaded, but we have to
+** do it before in order to access high memory.
 */
-switch_unreal:
+copy_protected:
 	pushw	%es		/* save es */
 	pushw	%ds		/* save ds */
 
@@ -331,11 +352,8 @@ switch_unreal:
 	movb	$0x80, %al	/* disable NMIs */
 	outb	%al, $0x70
 
-	call	enable_A20
-	call	check_mem
-	call	move_gdt
-
-	lgdt	gdt_48 + BOOT_ADDRESS
+	movw	%cs, %si
+	movw	%si, %ds	/* fix ds because that causes errors? */
 
 	movl	%cr0, %eax	/* get current CR0 */
 	orl	$1, %eax	/* set the PE bit */
@@ -347,6 +365,9 @@ switch_unreal:
 	movw	$GDT_DATA, %bx	/* select data descriptor from GDT */
 	movw	%bx, %ds	/* and let %ds, %es access all of memory */
 	movw	%bx, %es
+
+	//cld
+	//rep	addr32 movsb	/* copy bytes */
 
 	andl	$0xFFFE, %eax	/* turn off PE bit */
 	movl	%eax, %cr0	/* and store it back. */
