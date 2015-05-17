@@ -531,7 +531,6 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
  *
  *                  Note: this code structure was from primarily from the OSdev
  *                  wiki page.
- *                  http://wiki.osdev.org/pci_ide_controller#detecting_ide_drives
  *
  *  Arguments:      nothing
  *
@@ -557,8 +556,34 @@ void dev_summary() {
     }
 }
 
-// We are only going to do 28-bit LBA because we don't need hard drives larger
-// than 128GB and all hard drives support this mode
+/*
+ *  Name:           ata_pio_rw
+ *
+ *  Description:    Single function for Programmed I/O (PIO).
+ *                  Disables interrupts on all devices in the channel and configures
+ *                  the device for the proper LBA mode. It is important to note
+ *                  that this driver does not support CHS mode or DMA transfers.
+ *                  Additionally, both read and write functionality is provided
+ *                  in this function and is specified via an enum rw type. Another
+ *                  enum is also used to specify configuration for LBA48, LBA28, or CHS modes.
+ *
+ *                  Note: this code structure was from primarily from the OSdev
+ *                  wiki page.
+ *                  http://wiki.osdev.org/pci_ide_controller#detecting_ide_drives
+ *                  The project at https://github.com/agargiulo/DOSS/tree/master/disk
+ *                  improved upon this code by splitting the read/ write functionality
+ *                  into two functions. However, since there was so much code duplication
+ *                  in doing so, an enum was used to separate the functionality.
+ *
+ *  Arguments:      struct ide_device *dev: device from ide_devices to perform operation on
+ *                  sector:                 sector of device to perform operation on
+ *                  *buffer:                buffer to read and store into or write from
+ *                  bytes:                  number of bytes to store
+ *                  enum pio_directio rw:   enum for READ and WRITE operations
+ *
+ *
+ *  Return:         int:    0 if no error, otherwise the error status returned from the register
+*/
 int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_t bytes, enum pio_direction rw) {
     enum lba_support addressing;
 
@@ -568,7 +593,7 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     // (I) Select one from LBA48, LBA 28, or CHS
     // most modern hard disks support LBA48 mode
     // all devices support LBA28 mode
-    // we are not doing CHS mode -- it has some weird bit shifting
+    // we are not doing CHS mode -- it has some weird bit shifting that I do not understand...
     if (dev->commandSets & (1 << 26)) {
         addressing = LBA48;
     }
@@ -590,12 +615,7 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     // we do not support CHS mode, so just do LBA
     ide_write(dev->channel, ATA_REG_HDDEVSEL, 0xE0 | (dev->drive << 4) | ((sector >> 24) & 0x0F));
 
-    //if (addressing = CHS) {
-    //    ide_write(dev->channel, ATA_REG_HDDEVSEL, 0xA0 | (dev->drive << 4) | head);
-    //} else {
-    //}
-
-    // (V) Write parameters and configure LBA
+    // (V) Write parameters and configure LBA mode
     ide_write(dev->channel, ATA_REG_SECCOUNT0, 1);
     ide_write(dev->channel, ATA_REG_LBA0, (sector & 0xff));
     ide_write(dev->channel, ATA_REG_LBA1, (sector & 0xff00) >> 8);
@@ -608,9 +628,10 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
     }
 
     // (VI) Select the command and send it
-    // osdev has a variety of command sets to pick from
-    // becuase their function does both in and out
+    // OSDev has a variety of command sets to pick from
+    // because their function does both in and out
     // and attempts to account for DMA
+    // since we do not do DMA or CHS, there are only 4 possible commands to send
     int command = 0x00;
     if ((addressing == LBA48) && (rw == READ)) {
         command = ATA_CMD_READ_PIO_EXT;
@@ -625,15 +646,14 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
 
     // after sending command, we should poll, then read/write a sector, then poll,
     // then read/write a sector and rinse-repeat until we are done
-    // also, we will catch errors
-
-    // for loop for number of bytes to read
+    // also, errors encountered will be noted in status
 
     int status = ide_polling(dev->channel);                             // poll and check status of device
     while (!(ide_read(dev->channel, ATA_REG_STATUS) & ATA_SR_DRQ));     // while data request not ready
 
     // if there is no device error
     if (!status) {
+        // perform READ operation
         if (rw == READ) {
             uint16_t data;
             int bytestoread = 0;
@@ -662,6 +682,8 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
                 (buffer)[(2*i)+1] = 0x00;
             }
         } else if (rw == WRITE) {
+            // otherwise, perform WRITE operation
+
             int bytestowrite = 0;
             int numzeroes = 0;
 
@@ -686,12 +708,15 @@ int ata_pio_rw(struct ide_device *dev, uint32_t sector, uint8_t *buffer, uint32_
         }
 
     }
+    // otherwise, an error has been encountered
+    // print out details about it and return that error
     else {
         c_printf("device busy, %s failed", rw);
         ide_print_error(0, status);
         return status;
     }
 
+    // no error, successful read/ write, return 0
     return 0;
 }
 
