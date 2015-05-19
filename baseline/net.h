@@ -71,9 +71,15 @@ typedef struct net8255x_s {
 } net8255x;
 
 #define RFD_COUNT               16
-//#define RFD_DATA_SIZE           1518 //1510?
-#define RFD_DATA_SIZE           1496 //1510?
-#define RFD_HEAD_SIZE           14 //1510?
+#define RFD_DATA_SIZE           1496
+#define RFD_HEAD_SIZE           14 // 2x Mac + protocol
+typedef struct net_frame_s {
+    uint8_t mac_dst[MAC_LEN];
+    uint8_t mac_src[MAC_LEN];
+    uint16_t proto;
+    uint8_t data[RFD_DATA_SIZE];
+} __attribute__((__packed__)) netframe;
+
 typedef struct rfd_s {
     uint16_t status;    // status
     uint16_t command;   // command
@@ -81,7 +87,7 @@ typedef struct rfd_s {
     uint32_t reserved;  // reserved
     uint16_t bytes_written;  
     uint16_t size;      // frame size
-    char data[RFD_DATA_SIZE + RFD_HEAD_SIZE]; // frame data
+    netframe frame; // frame data
 } __attribute__((__packed__)) rfd;
 
 #define TXD_COUNT               16
@@ -91,10 +97,12 @@ typedef struct txd_s {
     uint16_t status;    // status
     uint16_t command;   // command
     uint32_t link_addr; // link address offset
-    uint32_t reserved;  // reserved
-    uint16_t count;     // rfd count
-    uint16_t size;      // frame size
-    char data[RFD_DATA_SIZE]; // frame data
+    
+    uint32_t tx_buf_addr;
+    uint16_t tx_count;
+    uint8_t tx_thresh;
+    uint8_t tx_buf_count;
+    netframe frame;
 } __attribute__((__packed__)) txd;
 
 #define NET_CMD_DELAY           5
@@ -201,4 +209,10 @@ int net_read(char *buf, int nbytes);
 */
 void net_isr(int vector, int code);
 
+
+/*
+** 
+*/
+uint32_t ntohl(uint32_t n);
+uint16_t ntohw(uint16_t n);
 #endif
