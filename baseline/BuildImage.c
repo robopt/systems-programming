@@ -35,7 +35,7 @@ FILE	*out;			/* output stream for disk image file */
 ** sections can be loaded.
 */
 #define	N_INFO	( 512 / sizeof( short ) )
-short	info[ N_INFO ];
+unsigned info[ N_INFO ];
 int	n_info = N_INFO;
 
 void quit( char *msg, int call_perror ) {
@@ -92,7 +92,6 @@ void process_file( char *name, char *addr ){
 	FILE	*in;
 	int	n_sectors;
 	long	address, address_end;
-	short	segment, offset;
 	int	valid_address;
 
 	/*
@@ -117,8 +116,6 @@ void process_file( char *name, char *addr ){
 	char	*unused;
 
 	address = strtol( addr, &unused, 0 );
-	segment = (short)( address >> 4 );
-	offset = (short)( address & 0xf );
 	valid_address = *unused == '\0' && (
 	    ( address <= 0x0009ffff ) ||
 	    ( address >= 0x00100000 && address <= 0x00dfffff ) );
@@ -151,8 +148,7 @@ void process_file( char *name, char *addr ){
 	    name, n_sectors, (unsigned int) address );
 
 	info[ --n_info ] = n_sectors;
-	info[ --n_info ] = segment;
-	info[ --n_info ] = offset;
+	info[ --n_info ] = address;
 }
 
 /*

@@ -131,19 +131,14 @@ diskok:
 	popw	%ds
 
 nextblock:
-	xorl	%eax, %eax
-	movw	(%di), %ax	/* get the # of sectors */
-	testw	%ax, %ax	/* is it zero? */
+	movl	(%di), %eax	/* get the # of sectors */
+	testl	%eax, %eax	/* is it zero? */
 	jz	done_loading	/*   yes, nothing more to load. */
 
-	subw	$2, %di
-	movw	(%di), %bx	/* get the segment value */
-	movw	%bx, %es	/*   and copy it to %es */
-	subw	$2, %di
-	xorl	%ebx, %ebx
-	movw	(%di), %bx	/* get the address offset */
-	subw	$2, %di
-	pushl	%edi		/* save di */
+	subw	$4, %di
+	movl	(%di), %ebx	/* get the address */
+	subw	$4, %di
+	pushw	%di		/* save di */
 	call	readprog	/* read this program block, */
 	popl	%edi		/* and restore di */
 	jmp	nextblock	/*   then go back and read the next one. */
@@ -160,7 +155,6 @@ readprog:
 	movb	part2, %al
 	testb	%al, %al
 	jz	doread			/* if we're on part 2 */
-	pushw	%es			/* save destination segment */
 	pushl	%ebx			/* save destination offset */
 
 doread:
@@ -182,12 +176,6 @@ copydata:
 	jz	donecopy		/* if we're on part 2 */
 	popl	%ebx			/* get destination offset */
 	movl	%ebx, %edi
-	popw	%es			/* get destination segment */
-
-	movw	%es, %ax		/* get original %es */
-	movzwl	%ax, %eax
-	shll	$4, %eax		/* multiply by 16 */
-	addl	%eax, %edi		/* add to %edi to get actual address */
 
 	movl	$TEMPRD_ADDR, %esi	/* get source address */
 
@@ -201,18 +189,8 @@ copydata:
 donecopy:
 	movw	$msg_dot, %si		/* print status: a dot */
 	call	dispMsg
-	cmpl	$OFFSET_LIMIT, %ebx	/* have we reached the offset limit? */
-	je	adjust			/* Yes--must adjust the es register */
-	addl	$SECTOR_SIZE, %ebx	/* No--just adjust the block size to */
-	jmp	readcont2		/*     the offset and continue. */
+	addl	$SECTOR_SIZE, %ebx	/* load next sector */
 
-adjust:
-	movl	$0, %ebx	/* start offset over again */
-	movw	%es, %ax
-	addw	$0x1000, %ax	/* move segment pointer to next chunk */
-	movw	%ax, %es
-
-readcont2:
 	movb	%ch, %al	/* mark down cylinder */
 	movb	%cl, %ah
 	shr	$6, %ah
@@ -576,10 +554,10 @@ gdt_len = end_gdt - start_gdt
 ** to be loaded, their values appear just before the previous set.
 */
 
-	.org	SECTOR_SIZE * 2 - 2 * 3
-firstoffset:
-	.word	0	/* target offset will go here */
-firstsegment:
-	.word	0	/* target segment will go here */
+	.org	SECTOR_SIZE * 2 - 4 * 3
+
+	.long	0	/* zero indicates end of data */
+firstaddress:
+	.long	0	/* target address will go here */
 firstcount:
-	.word	0	/* n_sectors for 1st module will go here */
+	.long	0	/* n_sectors for 1st module will go here */
