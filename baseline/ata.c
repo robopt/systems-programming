@@ -823,10 +823,7 @@ int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes)
 */
 void rw_test() {
     uint8_t data[512];
-    char *string = "testing in sector 4";   // interesting --
-    // alpha characters are sized as 1 unit
-    // spaces as 4
-    // numbers as 2
+    char *string = "testing in sector 4";
 
     for (int dev = 0; dev < 4; dev++) {
         // if IDE device is valid
