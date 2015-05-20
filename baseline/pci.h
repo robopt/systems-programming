@@ -57,7 +57,7 @@ typedef struct pci_dev_s {
     uint8_t irq;
 } pcidev;
 
-pcidev pci_devs[256];
+pcidev pci_devs[64];
 uint8_t pci_dev_count;
 
 /*
@@ -66,10 +66,6 @@ uint8_t pci_dev_count;
 void _pci_modinit(void);
 
 uint16_t pci_device_count(void);
-/*
-** Search for a device on a certain PCI bus
-*/
-//uint32_t find_dev_bus(uint8_t bus, uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass );
 
 /*
 ** Enumerate the pci bus looking for a certain device

@@ -9,7 +9,7 @@
 #include "types.h"
 #include "startup.h"
 #include "support.h"
-//#define _pci_debug_
+#define _pci_debug_
 #ifdef _pci_debug_
 #include "c_io.h"
 #endif
@@ -61,8 +61,7 @@ void _pci_modinit(){
 
 
 /*
-** Enumerate the pci bus looking for a certain device
-** 
+** Search for a certain device. Returns NULL if not found.
 */
 pcidev *find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subclass ) {
     for ( uint16_t i = 0; i < pci_dev_count; ++i ) {
@@ -111,9 +110,6 @@ uint16_t pci_read_deviceid(pcidev device) { return ( pci_read_w(device.bus, devi
 uint16_t _pci_read_command(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_w(bus, dev, func, PCI_DEVICE_ID) ); }
 uint16_t pci_read_command(pcidev device) { return ( pci_read_w(device.bus, device.device, device.func, PCI_DEVICE_ID) ); }
 
-void _pci_write_command(uint8_t bus, uint8_t dev, uint8_t func, uint16_t val) { ( pci_write_w(bus, dev, func, PCI_DEVICE_ID, (uint8_t) val) ); }
-void pci_write_command(pcidev device, uint16_t val) { ( pci_write_w(device.bus, device.device, device.func, PCI_DEVICE_ID, (uint8_t) val) ); }
-
 uint16_t _pci_read_status(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_w(bus, dev, func, PCI_DEVICE_ID) ); }
 uint16_t pci_read_status(pcidev device) { return ( pci_read_w(device.bus, device.device, device.func, PCI_DEVICE_ID) ); }
 
@@ -135,89 +131,43 @@ uint8_t pci_read_headertype(pcidev device) { return ( pci_read_b(device.bus, dev
 uint8_t _pci_read_irq(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_b(bus, dev, func, PCI_IRQLINE) ); }
 uint8_t pci_read_irq(pcidev device) { return ( pci_read_b(device.bus, device.device, device.func, PCI_IRQLINE) ); }
 
+
+
+/*
+** Read byte from pci bus
+*/
 uint8_t pci_read_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
 
-    /* Calculate address, adapted from http://wiki.osdev.org/PCI */
-    //uint32_t address;
-    //uint32_t bus_32  = (uint32_t)bus;
-    //uint32_t dev_32 = (uint32_t)dev;
-    //uint32_t func_32 = (uint32_t)func;
-    //uint32_t base = 0x80000000;
-    //address = (uint32_t) ( (bus_32<<16) | (dev_32 << 11) | (func_32 << 8) |
-    //        (offset & 0xfc) | base);
     __outl(0xCF8, pci_calc_address(bus,dev,func,offset));
     int8_t res = (uint8_t)((__inl(0xCFC) >> ((offset % 0x04) * 8)) & 0xff);
     return res;
 }
 
+/*
+** Read word from pci bus
+*/
 uint16_t pci_read_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
 
-    /* Calculate address, adapted from http://wiki.osdev.org/PCI */
-    //uint32_t address;
-    //uint32_t bus_32  = (uint32_t)bus;
-    //uint32_t dev_32 = (uint32_t)dev;
-    //uint32_t func_32 = (uint32_t)func;
-    //uint32_t base = 0x80000000;
-    //address = (uint32_t) ( (bus_32<<16) | (dev_32 << 11) | (func_32 << 8) |
-    //        (offset & 0xfc) | base);
     __outl(0xCF8, pci_calc_address(bus,dev,func,offset));
     int16_t res = (uint16_t)((__inl(0xCFC) >> ((offset % 0x04) * 8)) & 0xffff);
     return res;
 }
 
+/*
+** Read long from pci bus
+*/
 uint32_t pci_read_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
 
-    /* Calculate address, adapted from http://wiki.osdev.org/PCI */
-    //uint32_t address;
-    //uint32_t bus_32  = (uint32_t)bus;
-    //uint32_t dev_32 = (uint32_t)dev;
-    //uint32_t func_32 = (uint32_t)func;
-    //uint32_t base = 0x80000000;
-    //address = (uint32_t) ( (bus_32<<16) | (dev_32 << 11) | (func_32 << 8) |
-    //        (offset & 0xfc) | base);
     __outl(0xCF8, pci_calc_address(bus,dev,func,offset));
-    //uint32_t res = (uint32_t)(__inw(0xCFC) & 0xffffffff);
     int32_t res = (uint32_t)(__inl(0xCFC));
     return res;
 }
 
-void pci_write_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val) {
-    // Write to PCI table and configure devices
-    __outl(0xCF8,
-            0x80000000
-            | (bus << 16)
-            | (dev << 11)
-            | (func << 8)
-            | (offset & 0xfc) );
-
-    __outb(0xCF8 + (offset & 0x03), val);
-}
-
-void pci_write_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val) {
-    // Write to PCI table and configure devices
-    __outl(0xCF8,
-            0x80000000
-            | (bus << 16)
-            | (dev << 11)
-            | (func << 8)
-            | (offset & 0xfc) );
-
-    __outb(0xCF8, val);
-}
-
-void pci_write_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset, uint8_t val) {
-    // Write to PCI table and configure devices
-    __outl(0xCF8,
-            0x80000000
-            | (bus << 16)
-            | (dev << 11)
-            | (func << 8)
-            | (offset & 0xfc) );
-
-    __outl(0xCF8, val);
-}
-
+/*
+** Calculate 32bit address from bus, device, function and offset
+*/
 uint32_t pci_calc_address(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset){
+    /* Calculate address, adapted from http://wiki.osdev.org/PCI */
     uint32_t address;
     uint32_t bus_32  = (uint32_t)bus;
     uint32_t dev_32 = (uint32_t)dev;
