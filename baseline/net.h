@@ -1,4 +1,8 @@
-/* ==============================================================
+/* 
+** File:    net.h
+** Author:  Edward Mead
+** Description: Driver for the e100 (x8255#) network card
+** ==============================================================
 ** ===== Intel 8255x 10/100 Mbps Ethernet Controller Family =====
 ** ==============================================================
 ** 
@@ -62,20 +66,28 @@
 
 #define SCB_CMD_EL              0x8000
 #define SCB_CMD_S               0x4000
+#define SCB_CMD_I               0x2000
+#define SCB_CMD_TRANS           0x0004
+
+
 
 #define MAC_LEN                 6   //48bit mac addr
+typedef struct mac_addr_s{
+    uint8_t addr[MAC_LEN];
+} mac_addr;
+
 typedef struct net8255x_s {
     pcidev *pci;    //pci device
     uint32_t scb;   //status control block
-    uint8_t mac[MAC_LEN]; //mac addr
+    mac_addr mac;
 } net8255x;
 
 #define RFD_COUNT               16
 #define RFD_DATA_SIZE           1496
 #define RFD_HEAD_SIZE           14 // 2x Mac + protocol
 typedef struct net_frame_s {
-    uint8_t mac_dst[MAC_LEN];
-    uint8_t mac_src[MAC_LEN];
+    mac_addr mac_dst;
+    mac_addr mac_src;
     uint16_t proto;
     uint8_t data[RFD_DATA_SIZE];
 } __attribute__((__packed__)) netframe;
@@ -161,6 +173,7 @@ typedef struct txd_s {
 #define SCB_RU_LOAD_CU_BASE     0x06
 #define SCB_RU_RBD_RESUME       0x07
 
+#define RFD_BYTE_WRITTEN_MASK   0x3F
 /*
 ** Initialize 
 ** Return: 0 on Success, <0 on Error
@@ -193,7 +206,8 @@ int net_cmd_wait(void);
 ** Param [ nbytes ]: Number of bytes to write
 ** Return: Number of bytes written
 */
-int net_write(char *buf, int nbytes);
+int net_write(mac_addr dst, char *buf, int nbytes);
+void net_write_test(void);
 
 /*
 ** Read up to n bytes, place into buffer.
