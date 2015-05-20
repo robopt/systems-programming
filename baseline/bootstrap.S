@@ -98,7 +98,7 @@ diskok:
 	movw	$1, %ax			/* sector count = 1 */
 	movw	$START_SEGMENT, %bx	/* read this into memory that */
 	movw	%bx, %es		/* immediately follows this code. */
-	movl	$START_OFFSET, %ebx
+	movw	$START_OFFSET, %bx
 	call	readprog
 
 /*
