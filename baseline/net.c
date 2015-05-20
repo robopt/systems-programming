@@ -4,17 +4,18 @@
 #include "support.h"
 #include "startup.h"
 #include "klib.h"
+#include "c_io.h"
 #include "common.h"
 
-#define _net_debug_
+//#define _net_debug_
 #ifdef _net_debug_
-#include "c_io.h"
+//#include "c_io.h"
 #endif
 
-//rfd rx_buf[RFD_COUNT];
+rfd rx_buf[RFD_COUNT];
 //txd tx_buf[TXD_COUNT];
 txd *tx_buf;
-#define rfd_base_address 0x0050000
+//#define rfd_base_address 0x0050000
 //rfd **rx_buf;
 
 rfd *rx_start = NULL;
@@ -27,12 +28,24 @@ int tx_buf_index;
 int tx_buf_cur;
 
 net8255x *netdev;
+mac_addr my_mac;
 
 /*
 ** Initialize
 ** Return: 0 on Success, <0 on Error
 */
 int _net_modinit() {
+    c_printf("Please input a value for the mac addr: ");
+    uint8_t val = c_getchar();
+    c_printf("\nMAC Address set to: ");
+    for ( uint8_t i = 0; i < MAC_LEN; ++i) {
+        my_mac.addr[i] = val;
+        c_printf("%x",val);
+        if (i < MAC_LEN - 1) {
+            c_printf(":");
+        }
+    }
+    c_printf("\n");
     rx_buf_index = 0;
     rx_buf_cur = 0;
     tx_buf_index = 0;
@@ -80,8 +93,11 @@ int _net_modinit() {
     // Initialize RX Buffers
     rfd *prev = NULL;
     for (int i = 0; i < RFD_COUNT; ++i ) {
-        rfd *cur = (rfd *)(rfd_base_address + (i * sizeof(rfd)));
+        //rfd *cur = (rfd *)(rfd_base_address + (i * sizeof(rfd)));
+        rfd *cur = &rx_buf[i];
+#       ifdef _net_debug_
         c_printf("[net.c][net_init]: Allocating: %x\n", cur);
+#       endif
         _memset((uint8_t *)cur, sizeof(rfd), 0);
         cur->size = RFD_DATA_SIZE;
         if (rx_start == NULL){
@@ -226,33 +242,74 @@ int _net_modinit_driver() {
     return -1;
 }
 
+void net_write_test(void){
+    txd *tx = &tx_buf[0];
+    tx->frame.mac_src = my_mac;
+    tx->frame.proto = 0x08;
+    tx->tx_buf_addr = 0;
+    tx->command = SCB_CMD_EL | SCB_CMD_I | SCB_CMD_S | SCB_CMD_TRANS;
+    c_printf("Enter a message to send: ");
+    char test[64];
+    c_gets(test,64);
+    int i;
+    for (i = 0; test[i] != '\0'; ++i) {
+        tx_buf->frame.data[i] = test[i];
+    }
+    tx->tx_count = RFD_HEAD_SIZE + i;
+#   ifdef _net_debug_
+    c_printf("[net.c][net_write_test]: Sending frame to \"");
+#   endif
+    for (int i = 0; i < MAC_LEN; ++i){
+        tx->frame.mac_dst.addr[i] = 0xFF;
+#       ifdef _net_debug_
+        c_printf("%x",tx->frame.mac_dst.addr[i]);
+        if (i < MAC_LEN -1) {
+            c_printf(":");
+        }
+#       endif
+    }
+#   ifdef _net_debug_
+    c_printf("\" Data : ");
+    for (int i = 0; i < tx->tx_count - RFD_HEAD_SIZE; ++i) {
+        c_printf("%c",tx->frame.data[i]);
+    }
+#   endif
+    net_cmd_writel(SCB_GEN_PTR, (uint32_t)tx);
+    net_cmd_writeb(SCB_COMMAND, SCB_CU_START);
+}
 /*
 ** Write nbytes to the tx buffer
 ** Param [ buf ]: Buffer to write from
 ** Param [ nbytes ]: Number of bytes to write
 ** Return: Number of bytes written
 */
-int net_write(char *buf, int nbytes) {
-
-    /*uint8_t *data = (uint8_t *)&(eth0.tx_buf_base[1]);
-
-    
-    _kmemclr((byte_t *) eth0.tx_buf_base, sizeof(e100_tx_buf_t));
-    eth0.tx_buf_base->tbda_addr = 0;
-    eth0.tx_buf_base->header.cmd = ACT_CMD_EL | ACT_CMD_I | ACT_CMD_S | ACT_CMD_TRANS;
-    eth0.tx_buf_base->tx_cb_byte_count = data_size;
-
-    __outl(eth0.CSR_BAR + E_CSR_SCB_GEN_PTR, (uint32_t) eth0.tx_buf_base);
-    __outb(eth0.CSR_BAR + E_CSR_SCB_COM_WORD, SCB_CCMD_CU_START);*/
-    net_cmd_writel(SCB_GEN_PTR, (uint32_t)tx_buf);
-    net_cmd_writeb(SCB_COMMAND, SCB_CU_START);
+int net_write(mac_addr dst, char *buf, int nbytes) {
     //TODO: Implement circular buffer
-    for ( int i = 0; i < nbytes; ++i ) {
-        if (tx_buf_index >= 512) {
-            tx_buf_index = 0;
-        }
-        //tx_buf[tx_buf_index] = buf[i];
+    txd *tx = &tx_buf[0];
+    tx->frame.mac_src = my_mac;
+    tx->frame.mac_dst = dst;
+    tx->frame.proto = 0x08;
+    tx->tx_buf_addr = 0;
+    tx->command = SCB_CMD_EL | SCB_CMD_I | SCB_CMD_S | SCB_CMD_TRANS;
+    tx->tx_count = RFD_HEAD_SIZE + nbytes;
+    for (int i = 0; i < nbytes; ++i){
+        tx_buf->frame.data[i] = buf[i];
     }
+#   ifdef _net_debug_
+    c_printf("[net.c][net_write]: Sending frame to \"");
+#   endif
+    for (int i = 0; i < MAC_LEN; ++i){
+        c_printf("%x",tx->frame.mac_dst.addr[i]);
+        if (i < MAC_LEN -1) {
+            c_printf(":");
+        }
+    }
+    c_printf("\" Data : ");
+    for (int i = 0; i < nbytes; ++i) {
+        c_printf("%c",buf[i]);
+    }
+    net_cmd_writel(SCB_GEN_PTR, (uint32_t)tx);
+    net_cmd_writeb(SCB_COMMAND, SCB_CU_START);
     return nbytes;
 }
 
@@ -284,6 +341,7 @@ int net_read(char *buf, int nbytes) {
 void net_isr(int vector, int code){
 #   ifdef _net_debug_
     c_printf("[net.c][net_isr] Interrupt. Vector: %d, Code: %d\n", vector, code);
+#   endif
     uint8_t scb_status = net_cmd_readb(SCB_STATUS);
     uint8_t scb_statack = net_cmd_readb(SCB_STATACK) & STATACK_MASK;
 
@@ -291,33 +349,55 @@ void net_isr(int vector, int code){
     uint8_t scb_status_cus = (scb_status & SCB_CUS_MASK);
     
     // SCB Stat/Ack
+    if (scb_statack & STATACK_CU_READY ) {
+        net_cmd_writeb(SCB_STATACK, STATACK_CU_READY);
+    }
+    if (scb_statack & STATACK_CU_LEAVE_ACT ) {
+        net_cmd_writeb(SCB_STATACK, STATACK_CU_LEAVE_ACT);
+    }
     if (scb_statack & STATACK_RU_LEAVE_RDY) {
         net_cmd_writeb(SCB_STATACK, STATACK_RU_LEAVE_RDY);
     }
 
     if (scb_statack & STATACK_RU_FRAME) {
+#       ifdef _net_debug_
         c_printf("[net.c][net_isr] RU Frame Finished... cur->status: %x\n",rx_cur->status);
+#       endif
         while (rx_cur->status != 0) {
             
-            c_printf("Got frame... \nSrc: ");
+            int ournet = 1;
             for (int i = 0; i < MAC_LEN; ++i){
-                c_printf("%x",rx_cur->frame.mac_src[i]);
+                if (i < MAC_LEN - 1) {
+                    if (rx_cur->frame.mac_src.addr[i] != rx_cur->frame.mac_src.addr[i+1])
+                        ournet = 0;
+                }
+            }
+#           ifdef _net_debug_
+            c_printf("Src: ");
+            for (int i = 0; i < MAC_LEN; ++i){
+                c_printf("%x",rx_cur->frame.mac_src.addr[i]);
                 if (i < MAC_LEN - 1) {
                     c_printf(":");
+                    if (rx_cur->frame.mac_src.addr[i] != rx_cur->frame.mac_src.addr[i+1])
+                        ournet = 0;
                 }
             }
             c_printf(" Dst: ");
             for (int i = 0; i < MAC_LEN; ++i){
-                c_printf("%x",(uint8_t)rx_cur->frame.mac_dst[i]);
+                c_printf("%x",(uint8_t)rx_cur->frame.mac_dst.addr[i]);
                 if (i < MAC_LEN - 1) {
                     c_printf(":");
                 }
             }
-            c_printf(" Proto: %d, Size: %d, Written: %d, Data: ", rx_cur->frame.proto, rx_cur->size, rx_cur->bytes_written);
-
-            /*for (int i = 0; i < rx_cur->bytes_written; ++i) {
-                c_printf("%x",rx_cur->frame.data[i]);
-            }*/
+            c_printf(" Proto: %d, Size: %d, Written: %d", rx_cur->frame.proto, rx_cur->size, rx_cur->bytes_written & RFD_BYTE_WRITTEN_MASK);
+#           endif
+            if (ournet) {
+                c_printf("WE GOT A MESSAGE: ");
+                for (int i = 0; i < (rx_cur->bytes_written & RFD_BYTE_WRITTEN_MASK); ++i) {
+                    c_printf("%c",rx_cur->frame.data[i]);
+                }
+            }
+            c_printf("\n");
             uint8_t done = 0;
             //if (cur->command & 0x8000) {
             if (rx_cur->command & SCB_CMD_EL) {
@@ -332,11 +412,20 @@ void net_isr(int vector, int code){
         }
         net_cmd_writeb(SCB_STATACK, STATACK_RU_FRAME);
     }
+    if ( scb_statack & STATACK_SWI )
+    {
+#       ifdef _net_debug_
+        c_printf("[net.c][net_isr] SCB Statack: SWI -> CU Finished.\n");
+        net_cmd_writeb(SCB_STATACK, STATACK_SWI);
+#       endif
+    }
 
     if ( scb_statack & STATACK_FLOW_PAUSE )
     {
+#       ifdef _net_debug_
         c_printf("[net.c][net_isr] SCB Statack: STATACK_FLOW_PAUSE\n");
         net_cmd_writeb(SCB_STATACK, STATACK_FLOW_PAUSE);
+#       endif
     }
 
     
@@ -347,7 +436,9 @@ void net_isr(int vector, int code){
         c_printf("[net.c][net_isr] SCB Status RUS: No Resources.\n");
         c_printf("[net.c][net_isr] RX Buffer @ CUR: Status: %x\n", rx_cur->status);
     }
+#   ifdef _net_debug_
     if (scb_status_rus & SCB_RUS_READY) { c_printf("[net.c][net_isr] SCB Status RUS: Ready.\n"); }
+#   endif
 
     // SCB Status CU Status
     if (scb_status_cus & SCB_CUS_IDLE) { c_printf("[net.c][net_isr] SCB Status CUS: Idle.\n"); }
@@ -355,6 +446,7 @@ void net_isr(int vector, int code){
     if (scb_status_cus & SCB_CUS_LPQ_ACTIVE) { c_printf("[net.c][net_isr] SCB Status CUS: LPQ Active.\n"); }
     if (scb_status_cus & SCB_CUS_HQP_ACTIVE) { c_printf("[net.c][net_isr] SCB Status CUS: HQP Active.\n"); }
 
+#   ifdef _net_debug_
     c_printf("[net.c][net_isr] SCB_STATUS: %x\n", scb_status);
     c_printf("[net.c][net_isr] SCB_STATACK: %x\n", scb_statack);
 #   endif
@@ -365,7 +457,6 @@ void net_isr(int vector, int code){
         __outb( PIC_SLAVE_CMD_PORT, PIC_EOI );
     }
     //_kpanic("net", "ISR Triggered.");
-    c_getchar();
     return; 
 }
 
