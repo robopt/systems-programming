@@ -44,28 +44,29 @@
 
 //	user	          baseline system calls in use
 		// exit spwn slep read writ gpin gsin
-#define	SPAWN_A	//  X    .    .    .    X    .    .
-#define	SPAWN_B	//  X    .    .    .    X    .    .
-#define	SPAWN_C	//  X    .    .    .    X    .    .
-#define	SPAWN_D	//  X    X    .    .    X    .    .
-#define	SPAWN_E	//  X    .    X    .    X    X    .
-#define	SPAWN_F	//  X    .    X    .    X    X    .
-#define	SPAWN_G	//  X    .    X    .    X    X    .
-#define	SPAWN_H	//  .    .    .    .    X    .    .
-// skipping user I
-#define	SPAWN_J	//  X    X    .    .    X    .    .
-#define	SPAWN_K	//  X    X    X    .    X    .    .
-#define	SPAWN_L	//  X    X    X    .    X    .    X
-#define	SPAWN_M	//  X    .    .    .    X    X    .
-#define	SPAWN_N	//  X    .    .    .    X    .    .
-// skipping user O
-#define	SPAWN_P	//  X    .    X    .    X    .    .
-#define	SPAWN_Q	//  X    .    .    .    X    .    .
-#define	SPAWN_R	//  X    .    X    X    X    .    .
+//#define	SPAWN_A	//  X    .    .    .    X    .    .
+//#define	SPAWN_B	//  X    .    .    .    X    .    .
+//#define	SPAWN_C	//  X    .    .    .    X    .    .
+//#define	SPAWN_D	//  X    X    .    .    X    .    .
+//#define	SPAWN_E	//  X    .    X    .    X    X    .
+//#define	SPAWN_F	//  X    .    X    .    X    X    .
+//#define	SPAWN_G	//  X    .    X    .    X    X    .
+//#define	SPAWN_H	//  .    .    .    .    X    .    .
+//// skipping user I
+//#define	SPAWN_J	//  X    X    .    .    X    .    .
+//#define	SPAWN_K	//  X    X    X    .    X    .    .
+//#define	SPAWN_L	//  X    X    X    .    X    .    X
+//#define	SPAWN_M	//  X    .    .    .    X    X    .
+//#define	SPAWN_N	//  X    .    .    .    X    .    .
+//// skipping user O
+//#define	SPAWN_P	//  X    .    X    .    X    .    .
+//#define	SPAWN_Q	//  X    .    .    .    X    .    .
+//#define	SPAWN_R	//  X    .    X    X    X    .    .
 // no user S
 // no user T
 // no user U
 // no user V
+#define SPAWN_NET
 
 /*
 ** Users W-Z are spawned from other processes; they
