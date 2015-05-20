@@ -580,6 +580,7 @@ void dev_summary() {
             c_printf("    Signature:    %04x\n", ide_devices[dev].signature);
             c_printf("    Capabilities: %04x\n", ide_devices[dev].capabilities);
             c_printf("    CommandSets:  %08x\n", ide_devices[dev].commandSets);
+            c_getchar();
             c_printf("    Cylinders:    %d\n",   ide_devices[dev].cylinders);
             c_printf("    Heads:        %d\n",   ide_devices[dev].heads);
             c_printf("    Sectors:      %d\n",   ide_devices[dev].sectors);
@@ -831,7 +832,6 @@ void rw_test() {
             c_printf("Device #%d\n", dev);
             c_printf("    Writing out: \"%s\"\n", string);
             disk_write(&ide_devices[dev], 6, (uint8_t *)string, 26);
-            //c_printf("finished writing\n");
 
             read_sector(&ide_devices[dev], 6, data);
             c_printf("    Read in:     \"");
@@ -843,6 +843,7 @@ void rw_test() {
             c_printf("\"\n");
         }
     }
+    c_getchar();
 
     //_kpanic("rw_test", "read write finished?!?");
 }
