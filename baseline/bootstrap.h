@@ -64,6 +64,19 @@
 #define	PAGE_GLOBAL		0x80
 
 /*
+** Page map flags
+*/
+#define	PAGE_PRESENT		0x01
+#define	PAGE_WRITE		0x02
+#define	PAGE_USER		0x04
+#define	PAGE_WRITETHROUGH	0x08
+#define	PAGE_NOCACHE		0x10
+#define	PAGE_ACCESSED		0x20
+#define	PAGE_4MIB		0x40
+#define	PAGE_DIRTY		0x40
+#define	PAGE_GLOBAL		0x80
+
+/*
 ** Real Mode Program(s) Text Area (0000:3000 - 0x7c00)
 */
 
