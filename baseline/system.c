@@ -146,6 +146,11 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
 ** first user process.
 */
 
+void ohgodwhy(int vector, int code){
+    (void)vector;
+    (void)code;
+}
+
 void _init( void ) {
 	pcb_t *pcb;
 
@@ -178,6 +183,7 @@ void _init( void ) {
 
 	c_puts( "Module init: " );
 
+        __install_isr(0x2E,ohgodwhy);
 	_queue_modinit();		// must be first
 	_pcb_modinit();
 	_stack_modinit();
@@ -186,6 +192,7 @@ void _init( void ) {
 	_sys_modinit();
 	_clock_modinit();
     _pci_modinit();
+    _ata_modinit();
     _net_modinit();
 	//_kpanic( "_init", "_net_modinit finished" );
 
@@ -248,5 +255,4 @@ void _init( void ) {
 	*/
 
 	c_puts( "System initialization complete.\n" );
-
 }
