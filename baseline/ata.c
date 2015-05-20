@@ -27,6 +27,9 @@
 #include "c_io.h"
 #endif
 
+uint8_t data[64];
+char *string = "testing in sector 7 - stan";
+
 /*
  *  Name:           static struct ata_channel channels[2]
  *
@@ -825,8 +828,6 @@ int disk_write(struct ide_device *dev, uint32_t sector, uint8_t *buf, int bytes)
  *  Return:         nothing (void)
 */
 void rw_test() {
-    uint8_t data[512];
-    char *string = "testing in sector 7 - stan";
 
     for (int dev = 0; dev < 4; dev++) {
         // if IDE device is valid
