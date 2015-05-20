@@ -14,8 +14,10 @@
 */
 
 #include "ata.h"
+#include "c_io.h"
 #include "klib.h"
 #include "pci.h"
+#include "startup.h"
 #include "support.h"
 #include "ulib.h"
 #include "x86arch.h"
