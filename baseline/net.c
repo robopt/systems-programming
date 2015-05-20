@@ -396,8 +396,8 @@ void net_isr(int vector, int code){
                 for (int i = 0; i < (rx_cur->bytes_written & RFD_BYTE_WRITTEN_MASK); ++i) {
                     c_printf("%c",rx_cur->frame.data[i]);
                 }
+                c_printf("\n");
             }
-            c_printf("\n");
             uint8_t done = 0;
             //if (cur->command & 0x8000) {
             if (rx_cur->command & SCB_CMD_EL) {
