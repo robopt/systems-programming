@@ -107,6 +107,8 @@ diskok:
 ** Past this point, we need to access higher memory addresses to load the user
 ** program. Therefore, we have to enable unreal mode.
 */
+	movw	$1, part2
+
 	call	switch_unreal
 
 /*
@@ -149,19 +151,33 @@ nextblock:
 readprog:
 	pushl	%eax		/* save sector count */
 
+	movb	part2, %al
+	testb	%al, %al
+	jz	doread			/* if we're on part 2 */
+	pushw	%es			/* save destination segment */
+	pushl	%ebx			/* save destination offset */
+
+doread:
 	movw	sec, %cx	/* get sector number */
 	movb	head, %dh	/* get head number */
 	movb	$0x80, %dl
 
 	movw	$0x0201, %ax	/* read 1 sector */
 	int	$0x13
-	jnc	readcont	/* jmp if it worked ok */
+	jnc	copydata	/* jmp if it worked ok */
 
 	movw	$err_diskread, %si	/* can't proceed, */
 	call	dispMsg			/* print message and freeze. */
 	jmp	.
 
-readcont:
+copydata:
+	movb	part2, %al
+	testb	%al, %al
+	jz	donecopy		/* if we're on part 2 */
+	popl	%ebx			/* get destination offset */
+	popw	%es			/* get destination segment */
+
+donecopy:
 	movw	$msg_dot, %si		/* print status: a dot */
 	call	dispMsg
 	cmpl	$OFFSET_LIMIT, %ebx	/* have we reached the offset limit? */
@@ -271,6 +287,12 @@ err_diskstatus:
 	.asciz "Disk not ready.\n\r"
 err_diskread:
 	.asciz "Read failed\n\r"
+
+/*
+** In order to tell if we've loaded the second sector, we keep a global
+** variable.
+*/
+part2:	.byte 0
 
 /*
 ** Originally, the GDT contents were here.  When booting from a floppy
