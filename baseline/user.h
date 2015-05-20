@@ -44,9 +44,9 @@
 
 //	user	          baseline system calls in use
 		// exit spwn slep read writ gpin gsin
-//#define	SPAWN_A	//  X    .    .    .    X    .    .
-//#define	SPAWN_B	//  X    .    .    .    X    .    .
-//#define	SPAWN_C	//  X    .    .    .    X    .    .
+#define	SPAWN_A	//  X    .    .    .    X    .    .
+#define	SPAWN_B	//  X    .    .    .    X    .    .
+#define	SPAWN_C	//  X    .    .    .    X    .    .
 //#define	SPAWN_D	//  X    X    .    .    X    .    .
 //#define	SPAWN_E	//  X    .    X    .    X    X    .
 //#define	SPAWN_F	//  X    .    X    .    X    X    .
