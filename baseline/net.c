@@ -324,9 +324,9 @@ int net_write(mac_addr dst, char *buf, int nbytes) {
 ** Param [ nbytes ]: Max number of bytes to read
 ** Return: Number of bytes read
 */
-int net_read(char *buf, int nbytes) {
+/*int net_read(char *buf, int nbytes) {
     int read = 0;
-    /*while (read < nbytes && tx_buf_cur != tx_buf_index) {
+    while (read < nbytes && tx_buf_cur != tx_buf_index) {
         //buf[read] = tx_buf[tx_buf_cur];
         if (tx_buf_cur >= 512) {
             tx_buf_cur = 0;
@@ -334,9 +334,9 @@ int net_read(char *buf, int nbytes) {
             tx_buf_cur++;
         }
         read++;
-    }*/
+    }
     return read;
-}
+}*/
 
 /*
 ** Network driver interrupt handler
@@ -344,6 +344,7 @@ int net_read(char *buf, int nbytes) {
 ** ISSUE: stat/ack = 0x50, rus = 0x08
 */
 void net_isr(int vector, int code){
+    (void) code;
 #   ifdef _net_debug_
     c_printf("[net.c][net_isr] Interrupt. Vector: %d, Code: %d\n", vector, code);
 #   endif
