@@ -186,7 +186,7 @@ void _init( void ) {
 	_clock_modinit();
     _pci_modinit();
     _net_modinit();
-	_kpanic( "_init", "_net_modinit finished" );
+	//_kpanic( "_init", "_net_modinit finished" );
 
 	c_puts( "\n" );
 
