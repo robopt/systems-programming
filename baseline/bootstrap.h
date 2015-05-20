@@ -39,7 +39,7 @@
 #define	IDT_ADDRESS	0x00002500
 
 /*
-** Physical Memory Map Table (0000:2D00 - 0000:2D08)
+** Physical Memory Map Table (0000:2D00 - 0000:2D18)
 */
 #define	MMAP_SEGMENT	0x000002D0
 #define	MMAP_ADDRESS	0x00002D00
@@ -48,7 +48,7 @@
 #define	MMAP_CFG_LO	0x04	/* configured memory - low register */
 #define	MMAP_CFG_HI	0x06	/* configured memory - high register */
 #define	MMAP_PROGRAMS	0x08	/* # of programs loaded from disk (+ kernel) */
-#define	MMAP_SECTORS	0x0a	/* table of sector counts for each program */
+#define	MMAP_SECTORS	0x10	/* table of sector counts for each program */
 
 /*
 ** Page map flags

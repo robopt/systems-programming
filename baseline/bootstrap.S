@@ -98,7 +98,7 @@ diskok:
 	movw	$1, %ax			/* sector count = 1 */
 	movw	$START_SEGMENT, %bx	/* read this into memory that */
 	movw	%bx, %es		/* immediately follows this code. */
-	movw	$START_OFFSET, %bx
+	movl	$START_OFFSET, %ebx
 	call	readprog
 
 /*
@@ -116,13 +116,14 @@ diskok:
 	movw	$firstcount, %di
 
 	pushw	%ds
-	movw	(%di), %bx
+	movl	(%di), %ebx
 	movw	$MMAP_SEGMENT, %ax
 	movw	%ax, %ds
-	movw	%bx, MMAP_SECTORS	/* store kernel image size */
+	movl	%ebx, MMAP_SECTORS	/* store kernel image size */
 	popw	%ds
 
 nextblock:
+	xorl	%eax, %eax
 	movw	(%di), %ax	/* get the # of sectors */
 	testw	%ax, %ax	/* is it zero? */
 	jz	done_loading	/*   yes, nothing more to load. */
@@ -131,6 +132,7 @@ nextblock:
 	movw	(%di), %bx	/* get the segment value */
 	movw	%bx, %es	/*   and copy it to %es */
 	subw	$2, %di
+	xorl	%ebx, %ebx
 	movw	(%di), %bx	/* get the address offset */
 	subw	$2, %di
 	pushw	%di		/* save di */
@@ -145,7 +147,7 @@ nextblock:
 **	es:bx = starting address for the block
 */
 readprog:
-	pushw	%ax		/* save sector count */
+	pushl	%eax		/* save sector count */
 
 	movw	sec, %cx	/* get sector number */
 	movb	head, %dh	/* get head number */
@@ -162,13 +164,13 @@ readprog:
 readcont:
 	movw	$msg_dot, %si		/* print status: a dot */
 	call	dispMsg
-	cmpw	$OFFSET_LIMIT, %bx	/* have we reached the offset limit? */
+	cmpl	$OFFSET_LIMIT, %ebx	/* have we reached the offset limit? */
 	je	adjust			/* Yes--must adjust the es register */
-	addw	$SECTOR_SIZE, %bx	/* No--just adjust the block size to */
+	addl	$SECTOR_SIZE, %ebx	/* No--just adjust the block size to */
 	jmp	readcont2		/*     the offset and continue. */
 
 adjust:
-	movw	$0, %bx		/* start offset over again */
+	movl	$0, %ebx	/* start offset over again */
 	movw	%es, %ax
 	addw	$0x1000, %ax	/* move segment pointer to next chunk */
 	movw	%ax, %es
@@ -199,8 +201,8 @@ save_sector:
 	movw	%cx, sec	/* save sector number */
 	movb	%dh, head	/*   and head number */
 
-	popw	%ax		/* get the sector count from the stack */
-	decw	%ax		/*   and decrement it. */
+	popl	%eax		/* get the sector count from the stack */
+	decl	%eax		/*   and decrement it. */
 	jg	readprog	/* If it is zero, we're done reading. */
 
 readdone:
