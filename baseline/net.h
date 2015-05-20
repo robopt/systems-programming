@@ -56,20 +56,13 @@
 ** Issue commands to CU/RU via SCB (which is part of the CSR)
 ** 
 */
-/* SCB Status Word bit definitions */
 #include "pci.h"
 
 #ifndef _net_h
 #define _net_h
 
-
-
-#define SCB_CMD_EL              0x8000
-#define SCB_CMD_S               0x4000
-#define SCB_CMD_I               0x2000
-#define SCB_CMD_TRANS           0x0004
-
-
+// Enable/Disable Debug output
+//#define _net_debug_
 
 #define MAC_LEN                 6   //48bit mac addr
 typedef struct mac_addr_s{
@@ -103,8 +96,6 @@ typedef struct rfd_s {
 } __attribute__((__packed__)) rfd;
 
 #define TXD_COUNT               16
-//#define TXD_DATA_SIZE           1518 //1510?
-#define TXD_DATA_SIZE           1510 //1510?
 typedef struct txd_s {
     uint16_t status;    // status
     uint16_t command;   // command
@@ -127,6 +118,7 @@ typedef struct txd_s {
 #define SCB_EEPROM              0x0C
 #define SCB_SELF_TEST           0x0F
 #define SCB_GEN_STATUS          0x1D
+
 #define GEN_STATUS_LINK         0x01
 #define GEN_STATUS_100          0x02
 #define GEN_STATUS_DUPLEX       0x04
@@ -173,6 +165,11 @@ typedef struct txd_s {
 #define SCB_RU_LOAD_CU_BASE     0x06
 #define SCB_RU_RBD_RESUME       0x07
 
+#define SCB_CMD_EL              0x8000
+#define SCB_CMD_S               0x4000
+#define SCB_CMD_I               0x2000
+#define SCB_CMD_TRANS           0x0004
+
 #define RFD_BYTE_WRITTEN_MASK   0x3F
 /*
 ** Initialize 
@@ -210,6 +207,7 @@ int net_write(mac_addr dst, char *buf, int nbytes);
 void net_write_test(void);
 
 /*
+** NOT ACTUALLY IMPLEMENTED.
 ** Read up to n bytes, place into buffer.
 ** Param [ buf ]: Buffer to write to
 ** Param [ nbytes ]: Max number of bytes to read
@@ -223,10 +221,4 @@ int net_read(char *buf, int nbytes);
 */
 void net_isr(int vector, int code);
 
-
-/*
-** 
-*/
-uint32_t ntohl(uint32_t n);
-uint16_t ntohw(uint16_t n);
 #endif

@@ -31,7 +31,6 @@ void _pci_modinit(){
                     pci_devs[pci_dev_count].vendorid = vendor;
                     pci_devs[pci_dev_count].deviceid = _pci_read_deviceid(b, d, f);
                     if ( pci_devs[pci_dev_count].deviceid == 0xFFFF ) continue;
-                    //pci_devs[pci_dev_count].bar0 = _pci_read_bar0(b, d, f) & 0xFFFFFFFC;
                     pci_devs[pci_dev_count].bar0 = _pci_read_bar0(b, d, f);
                     pci_devs[pci_dev_count].bar1 = _pci_read_bar1(b, d, f);
                     pci_devs[pci_dev_count].bar2 = _pci_read_bar2(b, d, f);
@@ -80,8 +79,6 @@ pcidev *find_dev(uint16_t vendor, uint16_t device, uint8_t class, uint8_t subcla
 }
 
 uint16_t pci_device_count(){ return pci_dev_count; }
-
-
 
 uint32_t _pci_read_bar0(uint8_t bus, uint8_t dev, uint8_t func) { return ( pci_read_l(bus, dev, func, PCI_BAR0) ); }
 uint32_t pci_read_bar0(pcidev device) { return ( pci_read_l(device.bus, device.device, device.func, PCI_BAR0) ); }
@@ -137,7 +134,6 @@ uint8_t pci_read_irq(pcidev device) { return ( pci_read_b(device.bus, device.dev
 ** Read byte from pci bus
 */
 uint8_t pci_read_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
-
     __outl(0xCF8, pci_calc_address(bus,dev,func,offset));
     int8_t res = (uint8_t)((__inl(0xCFC) >> ((offset % 0x04) * 8)) & 0xff);
     return res;
@@ -147,7 +143,6 @@ uint8_t pci_read_b(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
 ** Read word from pci bus
 */
 uint16_t pci_read_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
-
     __outl(0xCF8, pci_calc_address(bus,dev,func,offset));
     int16_t res = (uint16_t)((__inl(0xCFC) >> ((offset % 0x04) * 8)) & 0xffff);
     return res;
@@ -157,7 +152,6 @@ uint16_t pci_read_w(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
 ** Read long from pci bus
 */
 uint32_t pci_read_l(uint8_t bus, uint8_t dev, uint8_t func, uint8_t offset) {
-
     __outl(0xCF8, pci_calc_address(bus,dev,func,offset));
     int32_t res = (uint32_t)(__inl(0xCFC));
     return res;

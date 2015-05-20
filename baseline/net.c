@@ -7,25 +7,12 @@
 #include "c_io.h"
 #include "common.h"
 
-//#define _net_debug_
-#ifdef _net_debug_
-//#include "c_io.h"
-#endif
-
 rfd rx_buf[RFD_COUNT];
-//txd tx_buf[TXD_COUNT];
 txd *tx_buf;
-//#define rfd_base_address 0x0050000
-//rfd **rx_buf;
 
 rfd *rx_start = NULL;
 rfd *rx_end = NULL;
 rfd *rx_cur = NULL;
-
-int rx_buf_index;
-int rx_buf_cur;
-int tx_buf_index;
-int tx_buf_cur;
 
 net8255x *netdev;
 mac_addr my_mac;
@@ -35,6 +22,8 @@ mac_addr my_mac;
 ** Return: 0 on Success, <0 on Error
 */
 int _net_modinit() {
+    
+    // Fake MAC
     c_printf("Please input a value for the mac addr: ");
     uint8_t val = c_getchar();
     c_printf("\nMAC Address set to: ");
@@ -46,16 +35,14 @@ int _net_modinit() {
         }
     }
     c_printf("\n");
-    rx_buf_index = 0;
-    rx_buf_cur = 0;
-    tx_buf_index = 0;
-    tx_buf_cur = 0;
+
     // Vendor: 8086 - Intel Corporation
     // Device: 1229 - 82557, 82558, 82559
     // Class:  0x02 - Network Controller
     // SubCls: 0x00 - Ethernet Controller
     netdev->pci = find_dev(0x8086, 0x1229, 0x02, 0x00);
     if (netdev->pci == (void*)0) {
+        // Device doesn't exist!
         return -1;
     }
 #   ifdef _net_debug_
@@ -117,7 +104,6 @@ int _net_modinit() {
     c_printf("[net.c][net_init]: rx_start: %x rx_start->link_addr: %x &rx_buf[1]: %x\n", rx_start, rx_start->link_addr, &rx_start[1]);
     c_printf("[net.c][net_init]: rx_start: %x rx_cur: %x rx_end: %x\n", rx_start, rx_cur, rx_end);
 #   endif
-    //c_getchar();
     net_cmd_writel(SCB_GEN_PTR, (uint32_t)rx_start);
     net_cmd_writeb(SCB_COMMAND, SCB_RU_START);
 
@@ -147,24 +133,26 @@ int _net_modinit() {
         }
         c_printf("[net.c][net_init]: Rev: %x, GEN Status: %x\n", netdev->pci->revision, __inw(netdev->scb + SCB_STATUS), gstatus);
     } else {
-        c_printf("[net.c][net_init]: Rev: %x\n", netdev->pci->revision, __inw(netdev->scb + SCB_STATUS));
+        c_printf("[net.c][net_init]: Rev: %x, GEN Status not available\n", netdev->pci->revision, __inw(netdev->scb + SCB_STATUS));
     }
 
     uint8_t scb_status = net_cmd_readb(SCB_STATUS);
     uint8_t scb_statack = net_cmd_readb(SCB_STATACK) & STATACK_MASK;
     c_printf("[net.c][net_init]: SCB Status: %x, SCB STATACK: %x\n", scb_status, scb_statack);
-    
 #   endif
     
-    //Register ISR
 #   ifdef _net_debug_
     c_printf("[net.c][net_init]: Registering ISR on Vector: %x \n", netdev->pci->irq + 0x20);
 #   endif
+    //Register ISR
     __install_isr( netdev->pci->irq + 0x20, net_isr );
-    //c_getchar();
     return 0;
 }
 
+
+/*
+** Write a byte cmd to SCB
+*/
 void net_cmd_writeb(uint8_t offset, uint8_t cmd){
 #   ifdef _net_debug_
     c_printf("[net.c][net_cmd_writeb]: Writing %x to %x.\n", cmd, netdev->scb+offset);
@@ -175,6 +163,9 @@ void net_cmd_writeb(uint8_t offset, uint8_t cmd){
     }
 }
 
+/*
+** Write a word cmd to SCB
+*/
 void net_cmd_writew(uint8_t offset, uint16_t cmd){
 #   ifdef _net_debug_
     c_printf("[net.c][net_cmd_writew]: Writing %x to %x.\n", cmd, netdev->scb+offset);
@@ -185,6 +176,9 @@ void net_cmd_writew(uint8_t offset, uint16_t cmd){
     }
 }
 
+/*
+** Write a long cmd to SCB
+*/
 void net_cmd_writel(uint8_t offset, uint32_t cmd){
 #   ifdef _net_debug_
         c_printf("[net.c][net_cmd_writel]: Writing %x to %x.\n", cmd, netdev->scb+offset);
@@ -195,6 +189,9 @@ void net_cmd_writel(uint8_t offset, uint32_t cmd){
     }
 }
 
+/*
+** Read a command byte from SCB
+*/
 uint8_t net_cmd_readb(uint8_t offset){
 #   ifdef _net_debug_
         c_printf("[net.c][net_cmd_readb]: Reading byte from %x.\n", netdev->scb+offset);
@@ -202,6 +199,9 @@ uint8_t net_cmd_readb(uint8_t offset){
     return ( __inb(netdev->scb + offset) );
 }
 
+/*
+** Read a command word from SCB
+*/
 uint16_t net_cmd_readw(uint8_t offset){
 #   ifdef _net_debug_
         c_printf("[net.c][net_cmd_readw]: Reading word from %x.\n", netdev->scb+offset);
@@ -209,6 +209,9 @@ uint16_t net_cmd_readw(uint8_t offset){
     return ( __inw(netdev->scb + offset) );
 }
 
+/*
+** Read a command long from SCB
+*/
 uint32_t net_cmd_readl(uint8_t offset){
 #   ifdef _net_debug_
         c_printf("[net.c][net_cmd_readl]: Reading long %x.\n", netdev->scb+offset);
@@ -216,6 +219,9 @@ uint32_t net_cmd_readl(uint8_t offset){
     return ( __inl(netdev->scb + offset) );
 }
 
+/*
+** Wait for a command to finish.
+*/
 int net_cmd_wait(){
     uint32_t count = 0;
     uint8_t cmd;
@@ -234,18 +240,13 @@ int net_cmd_wait(){
 }
 
 /*
-** Initialize the network card
-** SW Reset and configuration
-** Return: 0 on Success, <0 on Error
+** Used to test the communication of the driver.
+** Reads in from console, sends to broadcast (FF:FF:FF:FF:FF:FF)
 */
-int _net_modinit_driver() {
-    return -1;
-}
-
 void net_write_test(void){
     txd *tx = &tx_buf[0];
     tx->frame.mac_src = my_mac;
-    tx->frame.proto = 0x08;
+    tx->frame.proto = 0x08; // Because it's a protocol, not relevant
     tx->tx_buf_addr = 0;
     tx->command = SCB_CMD_EL | SCB_CMD_I | SCB_CMD_S | SCB_CMD_TRANS;
     c_printf("Enter a message to send: ");
@@ -277,6 +278,7 @@ void net_write_test(void){
     net_cmd_writel(SCB_GEN_PTR, (uint32_t)tx);
     net_cmd_writeb(SCB_COMMAND, SCB_CU_START);
 }
+
 /*
 ** Write nbytes to the tx buffer
 ** Param [ buf ]: Buffer to write from
@@ -297,7 +299,6 @@ int net_write(mac_addr dst, char *buf, int nbytes) {
     }
 #   ifdef _net_debug_
     c_printf("[net.c][net_write]: Sending frame to \"");
-#   endif
     for (int i = 0; i < MAC_LEN; ++i){
         c_printf("%x",tx->frame.mac_dst.addr[i]);
         if (i < MAC_LEN -1) {
@@ -308,6 +309,9 @@ int net_write(mac_addr dst, char *buf, int nbytes) {
     for (int i = 0; i < nbytes; ++i) {
         c_printf("%c",buf[i]);
     }
+#   endif
+
+    // Send to NIC
     net_cmd_writel(SCB_GEN_PTR, (uint32_t)tx);
     net_cmd_writeb(SCB_COMMAND, SCB_CU_START);
     return nbytes;
@@ -315,13 +319,14 @@ int net_write(mac_addr dst, char *buf, int nbytes) {
 
 /*
 ** Read up to n bytes, place into buffer.
+** NOT USED
 ** Param [ buf ]: Buffer to write to
 ** Param [ nbytes ]: Max number of bytes to read
 ** Return: Number of bytes read
 */
 int net_read(char *buf, int nbytes) {
     int read = 0;
-    while (read < nbytes && tx_buf_cur != tx_buf_index) {
+    /*while (read < nbytes && tx_buf_cur != tx_buf_index) {
         //buf[read] = tx_buf[tx_buf_cur];
         if (tx_buf_cur >= 512) {
             tx_buf_cur = 0;
@@ -329,7 +334,7 @@ int net_read(char *buf, int nbytes) {
             tx_buf_cur++;
         }
         read++;
-    }
+    }*/
     return read;
 }
 
@@ -396,8 +401,8 @@ void net_isr(int vector, int code){
                 for (int i = 0; i < (rx_cur->bytes_written & RFD_BYTE_WRITTEN_MASK); ++i) {
                     c_printf("%c",rx_cur->frame.data[i]);
                 }
+                c_printf("\n");
             }
-            c_printf("\n");
             uint8_t done = 0;
             //if (cur->command & 0x8000) {
             if (rx_cur->command & SCB_CMD_EL) {
@@ -412,6 +417,8 @@ void net_isr(int vector, int code){
         }
         net_cmd_writeb(SCB_STATACK, STATACK_RU_FRAME);
     }
+
+    // Software Interrupt
     if ( scb_statack & STATACK_SWI )
     {
 #       ifdef _net_debug_
@@ -420,6 +427,7 @@ void net_isr(int vector, int code){
 #       endif
     }
 
+    // Flow Control Pause
     if ( scb_statack & STATACK_FLOW_PAUSE )
     {
 #       ifdef _net_debug_
@@ -451,6 +459,7 @@ void net_isr(int vector, int code){
     c_printf("[net.c][net_isr] SCB_STATACK: %x\n", scb_statack);
 #   endif
 
+    // Acknowledge Interrupt
     __outb( PIC_MASTER_CMD_PORT, PIC_EOI );
     if( vector >= 0x28 && vector <= 0x2f )
     {
@@ -458,15 +467,4 @@ void net_isr(int vector, int code){
     }
     //_kpanic("net", "ISR Triggered.");
     return; 
-}
-
-uint32_t ntohl(uint32_t n) {
-    uint16_t temp = ((uint16_t*)&n)[1];
-    n= n<<sizeof(uint16_t) | temp;
-    return n;
-}
-uint16_t ntohw(uint16_t n) {
-    uint8_t temp = ((uint8_t*)&n)[1];
-    n= n<<sizeof(uint8_t) | temp;
-    return n;
 }
