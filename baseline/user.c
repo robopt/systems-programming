@@ -13,6 +13,7 @@
 #include "common.h"
 
 #include "ulib.h"
+#include "net.h"
 #include "user.h"
 
 #include "c_io.h"
@@ -49,6 +50,7 @@ void user_p( void ); void user_q( void ); void user_r( void );
 void user_s( void ); void user_t( void ); void user_u( void );
 void user_v( void ); void user_w( void ); void user_x( void );
 void user_y( void ); void user_z( void );
+void user_net( void );
 
 /*
 ** Users A, B, and C are identical, except for the character they
@@ -558,6 +560,27 @@ void user_z( void ) {
 }
 
 
+#include "support.h"
+void user_net( void ) {
+    for (;;){
+        /*mac_addr dst;
+        for (uint8_t i = 0; i < MAC_LEN; ++i ) {
+            dst.addr[i] = 0xFF;
+        }
+        char buf[64];
+        write( FD_SIO, "\nEnter Message: ",0);
+        //int nbytes = c_gets(buf,64);
+        __delay(500);
+        int nbytes = 0;
+        nbytes = read(FD_SIO,buf,64);
+        if (!nbytes)
+            net_write(dst,buf,nbytes);*/
+        net_write_test();
+		sleep( SECONDS_TO_MS(2) );
+    }
+}
+
+
 /*
 ** SYSTEM PROCESSES
 */
@@ -737,6 +760,13 @@ void init( void ) {
 	}
 #endif
 
+#ifdef SPAWN_NET
+	pid = spawnp( user_net, PRIO_USER_STD );
+	if( pid < 0 ) {
+		write( FD_CONSOLE, "init, spawnp() user net failed\n", 0 );
+		exit();
+	}
+#endif
 	write( FD_SIO, "!", 1 );
 
 	exit();

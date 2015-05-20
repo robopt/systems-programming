@@ -33,7 +33,8 @@ U_LIBS	=
 #	REPORT_MYSTERY_INTS	print a message on interrupt 0x27
 #	SP_OS_CONFIG		enable SP OS-specific startup variations
 #
-USER_OPTIONS = -DDEBUG -DDUMP_QUEUES -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP_OS_CONFIG
+#USER_OPTIONS = -DDEBUG -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP_OS_CONFIG
+USER_OPTIONS = -DDEBUG -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP_OS_CONFIG
 
 #
 # YOU SHOULD NOT NEED TO CHANGE ANYTHING BELOW THIS POINT!!!
@@ -140,6 +141,9 @@ prog.b:	prog.o
 
 usb:	usb.image
 	/usr/local/dcs/bin/dcopy usb.image
+
+rusb: usb.image rsync
+	ssh dsl "/usr/local/dcs/bin/dcopy ~/csc452/final/usb.image"
 
 #
 # Special rule for creating the modification and offset programs

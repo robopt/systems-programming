@@ -1,4 +1,8 @@
-/* ==============================================================
+/* 
+** File:    net.h
+** Author:  Edward Mead
+** Description: Driver for the e100 (x8255#) network card
+** ==============================================================
 ** ===== Intel 8255x 10/100 Mbps Ethernet Controller Family =====
 ** ==============================================================
 ** 
@@ -62,18 +66,32 @@
 
 #define SCB_CMD_EL              0x8000
 #define SCB_CMD_S               0x4000
+#define SCB_CMD_I               0x2000
+#define SCB_CMD_TRANS           0x0004
+
+
 
 #define MAC_LEN                 6   //48bit mac addr
+typedef struct mac_addr_s{
+    uint8_t addr[MAC_LEN];
+} mac_addr;
+
 typedef struct net8255x_s {
     pcidev *pci;    //pci device
     uint32_t scb;   //status control block
-    uint8_t mac[MAC_LEN]; //mac addr
+    mac_addr mac;
 } net8255x;
 
 #define RFD_COUNT               16
-//#define RFD_DATA_SIZE           1518 //1510?
-#define RFD_DATA_SIZE           1496 //1510?
-#define RFD_HEAD_SIZE           14 //1510?
+#define RFD_DATA_SIZE           1496
+#define RFD_HEAD_SIZE           14 // 2x Mac + protocol
+typedef struct net_frame_s {
+    mac_addr mac_dst;
+    mac_addr mac_src;
+    uint16_t proto;
+    uint8_t data[RFD_DATA_SIZE];
+} __attribute__((__packed__)) netframe;
+
 typedef struct rfd_s {
     uint16_t status;    // status
     uint16_t command;   // command
@@ -81,7 +99,7 @@ typedef struct rfd_s {
     uint32_t reserved;  // reserved
     uint16_t bytes_written;  
     uint16_t size;      // frame size
-    char data[RFD_DATA_SIZE + RFD_HEAD_SIZE]; // frame data
+    netframe frame; // frame data
 } __attribute__((__packed__)) rfd;
 
 #define TXD_COUNT               16
@@ -91,10 +109,12 @@ typedef struct txd_s {
     uint16_t status;    // status
     uint16_t command;   // command
     uint32_t link_addr; // link address offset
-    uint32_t reserved;  // reserved
-    uint16_t count;     // rfd count
-    uint16_t size;      // frame size
-    char data[RFD_DATA_SIZE]; // frame data
+    
+    uint32_t tx_buf_addr;
+    uint16_t tx_count;
+    uint8_t tx_thresh;
+    uint8_t tx_buf_count;
+    netframe frame;
 } __attribute__((__packed__)) txd;
 
 #define NET_CMD_DELAY           5
@@ -153,6 +173,7 @@ typedef struct txd_s {
 #define SCB_RU_LOAD_CU_BASE     0x06
 #define SCB_RU_RBD_RESUME       0x07
 
+#define RFD_BYTE_WRITTEN_MASK   0x3F
 /*
 ** Initialize 
 ** Return: 0 on Success, <0 on Error
@@ -185,7 +206,8 @@ int net_cmd_wait(void);
 ** Param [ nbytes ]: Number of bytes to write
 ** Return: Number of bytes written
 */
-int net_write(char *buf, int nbytes);
+int net_write(mac_addr dst, char *buf, int nbytes);
+void net_write_test(void);
 
 /*
 ** Read up to n bytes, place into buffer.
@@ -201,4 +223,10 @@ int net_read(char *buf, int nbytes);
 */
 void net_isr(int vector, int code);
 
+
+/*
+** 
+*/
+uint32_t ntohl(uint32_t n);
+uint16_t ntohw(uint16_t n);
 #endif
