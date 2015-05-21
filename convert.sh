@@ -1,6 +1,5 @@
 #!/bin/bash
-# CC0-licensed/public domain
-# see: gist.github.com/Undeterminant/9139f905904f7b29ff05
+# converts C constants to Rust constants
 for f in $@; do
 	regex='#define\s+(\w+)\s+(\w+|\(.*\))'
 	egrep $regex $f |\

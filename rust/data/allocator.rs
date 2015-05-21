@@ -87,7 +87,6 @@ impl<T: 'static + Alloc + Sized> Deref for Allocated<T> {
 impl<T: 'static + Alloc + Sized> DerefMut for Allocated<T> {
 	fn deref_mut<'a>(&'a mut self) -> &'a mut T { self.data }
 }
-#[unsafe_destructor]
 impl<T: 'static + Alloc + Sized> Drop for Allocated<T> {
 	fn drop(&mut self) {
 		unsafe {
@@ -98,6 +97,12 @@ impl<T: 'static + Alloc + Sized> Drop for Allocated<T> {
 				self.data = zeroed();
 			}
 		}
+	}
+}
+
+impl<T: 'static + Sized + Sync + Alloc + fmt::Debug> fmt::Debug for Allocated<T> {
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		self.data.fmt(fmt)
 	}
 }
 
@@ -193,12 +198,12 @@ impl<T: Alloc> Allocator<T> {
 }
 
 impl<T: 'static + Alloc + Sized> fmt::Debug for Allocator<T> where T: fmt::Debug {
-fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-	let pool_end = unsafe { self.pool.offset(self.refs.capacity() as isize) };
-	fmt.debug_struct("Allocator")
-		.field("available()", &self.available())
-		.field("pool", &(self.pool..pool_end))
-		.field("refs", &self.refs)
-		.finish()
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		let pool_end = unsafe { self.pool.offset(self.refs.capacity() as isize) };
+		fmt.debug_struct("Allocator")
+			.field("available()", &self.available())
+			.field("pool", &(self.pool..pool_end))
+			.field("refs", &self.refs)
+			.finish()
 	}
 }

@@ -42,11 +42,12 @@
 
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='../../../../index.html'>main</a>::<wbr><a href='../../../index.html'>rust</a>::<wbr><a href='../../index.html'>data</a>::<wbr><a href='../index.html'>container</a>::<wbr><a href='index.html'>prio_queue</a>::<wbr><a class='trait' href=''>Priority</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="#" title="collapse all docs">[&minus;]</a>
-        </span><a id='src-2230' class='srclink' href='../../../../../src/main/rust/data/container/prio_queue.rs.html#15-25' title='goto source code'>[src]</a></span></h1>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-2232' class='srclink' href='../../../../../src/main/rust/data/container/prio_queue.rs.html#15-25' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait Priority <span class='where'>where Self::Prio: <a class='trait' href='http://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html' title='core::cmp::Ord'>Ord</a></span> {
     type Prio;
-
     fn <a href='#tymethod.priority' class='fnname'>priority</a>(&amp;self) -&gt; Self::<a class='trait' href='../../../../../main/rust/data/container/prio_queue/trait.Priority.html' title='main::rust::data::container::prio_queue::Priority'>Prio</a>;
 
     fn <a href='#method.cmp_prio' class='fnname'>cmp_prio</a>(&amp;self, other: &amp;Self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html' title='core::cmp::Ordering'>Ordering</a> { ... }
@@ -79,6 +80,7 @@
 <li><code>impl <a class='trait' href='../../../../../main/rust/data/container/prio_queue/trait.Priority.html' title='main::rust::data::container::prio_queue::Priority'>Priority</a> for <a href='http://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></li>
 <li><code>impl <a class='trait' href='../../../../../main/rust/data/container/prio_queue/trait.Priority.html' title='main::rust::data::container::prio_queue::Priority'>Priority</a> for <a href='http://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a></code></li>
 <li><code>impl <a class='trait' href='../../../../../main/rust/data/container/prio_queue/trait.Priority.html' title='main::rust::data::container::prio_queue::Priority'>Priority</a> for <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></li>
+<li><code>impl <a class='trait' href='../../../../../main/rust/data/container/prio_queue/trait.Priority.html' title='main::rust::data::container::prio_queue::Priority'>Priority</a> for <a class='struct' href='../../../../../main/rust/data/allocator/struct.Allocated.html' title='main::rust::data::allocator::Allocated'>Allocated</a>&lt;Person&gt;</code></li>
 </ul><script type="text/javascript" async
                               src="../../../../../implementors/main/rust/data/container/prio_queue/trait.Priority.js">
                       </script></section>
@@ -113,6 +115,10 @@
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

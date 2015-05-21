@@ -42,8 +42,10 @@
 
     <section id='main' class="content macro">
 <h1 class='fqn'><span class='in-band'><a href='index.html'>main</a>::<wbr><a class='macro' href=''>container_debug!</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="#" title="collapse all docs">[&minus;]</a>
-        </span><a id='src-7912' class='srclink' href='../src/main/rust/data/container/generic/dev.rs.html#74-82' title='goto source code'>[src]</a></span></h1>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-8410' class='srclink' href='../src/main/rust/data/container/generic/dev.rs.html#74-82' title='goto source code'>[src]</a></span></h1>
 <pre class='rust macro'>
 <span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>container_debug</span> {
 	(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>name</span>:<span class='ident'>ident</span>; $(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>constraint</span>:<span class='ident'>ident</span>),<span class='op'>*</span>) <span class='op'>=&gt;</span> {
@@ -90,6 +92,10 @@ in a DebugList. Called as <code>container_debug(Type; Constraint, ...)</code> or
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

@@ -1,0 +1,26 @@
+DEMO CODE
+---------
+The code that was used during the demo is found in baseline.
+
+
+64-BIT CODE
+-----------
+The code for the (broken) 64-bit version is found in baselin-64bit.
+
+
+64-BIT DIFFS
+------------
+In case you'd like to take a look at the list of not-working changes for the
+64-bit system, I've included these. That way, you don't have to mess around with
+git.
+
+
+RUST CODE
+---------
+The (unmerged) Rust code is in the rust directory. I've included a main.rs and
+a precompiled main to do a quick demo of the priority queue and allocator and
+how that works.
+
+Because this stuff was very unstable when I made it, it seems to be that the
+destructor for Person doesn't work any more, so, I commented it out. Rest
+assured that this did work at one point, though.
