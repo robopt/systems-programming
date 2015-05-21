@@ -16,9 +16,9 @@
 /*
 ** The target program itself
 */
-#define	TARGET_SEGMENT	0x00001000	/* 0001:0000 */
-#define	TARGET_ADDRESS	0x00010000	/* and upward */
-#define	TARGET_STACK	0x00010000	/* and downward */
+#define	TARGET_SEGMENT	0x00010000	/* 0001:0000 */
+#define	TARGET_ADDRESS	0x00100000	/* and upward */
+#define	TARGET_STACK	0x00080000	/* and downward */
 
 /*
 ** The Global Descriptor Table (0000:0500 - 0000:2500)
@@ -49,6 +49,11 @@
 #define	MMAP_CFG_HI	0x06	/* configured memory - high register */
 #define	MMAP_PROGRAMS	0x08	/* # of programs loaded from disk (+ kernel) */
 #define	MMAP_SECTORS	0x10	/* table of sector counts for each program */
+
+/*
+** Temporary space for BIOS to copy data (0000:3000 - 0000:3200)
+*/
+#define	TEMPRD_ADDR	0x00003000
 
 /*
 ** Page map flags

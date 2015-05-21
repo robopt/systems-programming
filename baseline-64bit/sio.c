@@ -81,13 +81,13 @@
 static char _inbuffer[ BUF_SIZE ];
 static char *_inlast;
 static char *_innext;
-static uint32_t _incount;
+static uint64_t _incount;
 
 	// output character buffer
 static char _outbuffer[ BUF_SIZE ];
 static char *_outlast;
 static char *_outnext;
-static uint32_t _outcount;
+static uint64_t _outcount;
 
 	// output control flag
 static int _sending;

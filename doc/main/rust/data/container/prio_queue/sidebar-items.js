@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["prio_max","Compares and returns the maximum of two values, by priority."],["prio_min","Compares and returns the minimum of two values, by priority."]],"struct":[["PrioQueue","A fixed-size, greatest-priority-first queue."]],"trait":[["Priority","Trait for determining priority."]]});

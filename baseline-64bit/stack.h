@@ -27,7 +27,7 @@
 
 // size of each stack (in longwords)
 
-#define	STACK_LWORDS	1024
+#define	STACK_QUADS	1024
 
 // number of stacks to create includes one for the idle process
 
@@ -39,14 +39,14 @@
 
 // stack structure
 
-typedef uint32_t stack_t[STACK_LWORDS];
+typedef uint64_t stack_t[STACK_QUADS];
 
 /*
 ** Globals
 */
 
 extern stack_t _system_stack;		// separate stack for the OS itself
-extern uint32_t *_system_esp;		// OS %ESP value
+extern uint64_t *_system_rsp;		// OS %RSP value
 
 /*
 ** Prototypes

@@ -27,9 +27,9 @@
 ** Start of C-only definitions
 */
 
-// default contents of EFLAGS register
+// default contents of RFLAGS register
 
-#define	DEFAULT_EFLAGS	(EFLAGS_MB1 | EFLAGS_IF)
+#define	DEFAULT_RFLAGS	(RFLAGS_MB1 | RFLAGS_IF)
 
 /*
 ** Types
@@ -52,7 +52,7 @@
 **      pointer to the new PCB
 */
 
-pcb_t *_create_process( uint32_t entry, uint8_t prio );
+pcb_t *_create_process( void *entry, uint8_t prio );
 
 /*
 ** _init - system initialization routine

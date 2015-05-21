@@ -86,7 +86,7 @@ void exit( void );
 **	pid of the spawned process, or -1 on failure
 */
 
-int32_t spawn( void (*entry)(void) );
+int64_t spawn( void (*entry)(void) );
 
 /*
 ** spawnp - create a new process running a different program
@@ -97,7 +97,7 @@ int32_t spawn( void (*entry)(void) );
 **	pid of the spawned process, or -1 on failure
 */
 
-int32_t spawnp( void (*entry)(void), uint8_t prio );
+int64_t spawnp( void (*entry)(void), uint8_t prio );
 
 /*
 ** sleep - put the current process to sleep for some length of time
@@ -109,7 +109,7 @@ int32_t spawnp( void (*entry)(void), uint8_t prio );
 ** time
 */
 
-void sleep( uint32_t ms );
+void sleep( uint64_t ms );
 
 /*
 ** read - read from the console or SIO
@@ -148,7 +148,7 @@ int write( int fd, char *buf, int size );
 ** if 'who' is 0, retrieves information about the calling process
 */
 
-int32_t get_process_info( uint32_t what, uint16_t who );
+int64_t get_process_info( uint64_t what, uint16_t who );
 
 /*
 ** get_system_info - retrieve information about the system
@@ -159,7 +159,7 @@ int32_t get_process_info( uint32_t what, uint16_t who );
 **      the desired value, or -1 on error
 */
 
-int32_t get_system_info( uint32_t what );
+int64_t get_system_info( uint64_t what );
 
 /*
 ** bogus - a bogus system call, for testing our syscall ISR

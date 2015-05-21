@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ContainerImpl` trait in crate `main`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ContainerImpl">
+
+    <title>main::rust::data::container::generic::dev::ContainerImpl - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../../../../../index.html'>main</a>::<wbr><a href='../../../../index.html'>rust</a>::<wbr><a href='../../../index.html'>data</a>::<wbr><a href='../../index.html'>container</a>::<wbr><a href='../index.html'>generic</a>::<wbr><a href='index.html'>dev</a></p><script>window.sidebarCurrent = {name: 'ContainerImpl', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content trait">
+<h1 class='fqn'><span class='in-band'>Trait <a href='../../../../../index.html'>main</a>::<wbr><a href='../../../../index.html'>rust</a>::<wbr><a href='../../../index.html'>data</a>::<wbr><a href='../../index.html'>container</a>::<wbr><a href='../index.html'>generic</a>::<wbr><a href='index.html'>dev</a>::<wbr><a class='trait' href=''>ContainerImpl</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="#" title="collapse all docs">[&minus;]</a>
+        </span><a id='src-282' class='srclink' href='../../../../../../src/main/rust/data/container/generic/dev.rs.html#6-68' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub unsafe trait ContainerImpl&lt;'a, T: 'a&gt; <span class='where'>where Self: <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a></span> {
+    unsafe fn <a href='#tymethod.impl_construct' class='fnname'>impl_construct</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self;
+    fn <a href='#tymethod.impl_len' class='fnname'>impl_len</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>;
+    fn <a href='#tymethod.impl_capacity' class='fnname'>impl_capacity</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>;
+    fn <a href='#tymethod.impl_is_empty' class='fnname'>impl_is_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>;
+    fn <a href='#tymethod.impl_is_full' class='fnname'>impl_is_full</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>;
+    unsafe fn <a href='#tymethod.impl_peek' class='fnname'>impl_peek</a>(&amp;mut self) -&gt; &amp;mut T;
+    unsafe fn <a href='#tymethod.impl_remove' class='fnname'>impl_remove</a>(&amp;mut self) -&gt; &amp;mut T;
+    unsafe fn <a href='#tymethod.impl_forget' class='fnname'>impl_forget</a>&lt;F&gt;(&amp;mut self, n: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, f: F) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;mut T)</span>;
+    unsafe fn <a href='#tymethod.impl_add' class='fnname'>impl_add</a>(&amp;mut self, value: T);
+    fn <a href='#tymethod.impl_extend' class='fnname'>impl_extend</a>(&amp;mut self, value: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>;
+    unsafe fn <a href='#tymethod.impl_clear' class='fnname'>impl_clear</a>&lt;F&gt;(&amp;mut self, f: F) <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>)</span>;
+    unsafe fn <a href='#tymethod.impl_copy' class='fnname'>impl_copy</a>&lt;F&gt;(&amp;mut self, data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>, f: F) <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>)</span>;
+}</pre><div class='docblock'><p>Implementation required to have a basic container.</p>
+</div>
+            <h2 id='required-methods'>Required Methods</h2>
+            <div class='methods'>
+        <h3 id='tymethod.impl_construct' class='method stab '><code>unsafe fn <a href='#tymethod.impl_construct' class='fnname'>impl_construct</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self</code></h3><div class='docblock'><p>Constructs the container from an existing array of data. Should not
+check if <code>len &lt;= data.len()</code>, should not drop the contents of
+<code>data[len..]</code>, and should preferably not copy the data or allocate/use
+more memory than what is provided.</p>
+</div><h3 id='tymethod.impl_len' class='method stab '><code>fn <a href='#tymethod.impl_len' class='fnname'>impl_len</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Returns the current number of elements in the container in O(1) time.</p>
+</div><h3 id='tymethod.impl_capacity' class='method stab '><code>fn <a href='#tymethod.impl_capacity' class='fnname'>impl_capacity</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Returns the maximum number of elements that the container can hold in O(1)
+time.</p>
+</div><h3 id='tymethod.impl_is_empty' class='method stab '><code>fn <a href='#tymethod.impl_is_empty' class='fnname'>impl_is_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h3><div class='docblock'><p>Returns the same value as <code>len() &gt; 0</code>, but should be faster if the
+implementation allows it.</p>
+</div><h3 id='tymethod.impl_is_full' class='method stab '><code>fn <a href='#tymethod.impl_is_full' class='fnname'>impl_is_full</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h3><div class='docblock'><p>Returns the same value as <code>len() == capacity()</code>, but should be faster
+if the implementation allows it.</p>
+</div><h3 id='tymethod.impl_peek' class='method stab '><code>unsafe fn <a href='#tymethod.impl_peek' class='fnname'>impl_peek</a>(&amp;mut self) -&gt; &amp;mut T</code></h3><div class='docblock'><p>Returns a mutable reference to the next element in the container which
+would be removed by a call to <code>remove()</code>. Should not check if the
+container is empty.</p>
+</div><h3 id='tymethod.impl_remove' class='method stab '><code>unsafe fn <a href='#tymethod.impl_remove' class='fnname'>impl_remove</a>(&amp;mut self) -&gt; &amp;mut T</code></h3><div class='docblock'><p>Marks an element as removed from the container and returns a pointer to
+its current location in memory. Should not check if the container is empty
+or modify the value at the pointer.</p>
+</div><h3 id='tymethod.impl_forget' class='method stab '><code>unsafe fn <a href='#tymethod.impl_forget' class='fnname'>impl_forget</a>&lt;F&gt;(&amp;mut self, n: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, f: F) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;mut T)</span></code></h3><div class='docblock'><p>Marks multiple elements as removed from the container, running a function
+on them, and returning the number of elements removed. Should do the same
+as removing elements from the container until the container is empty, and
+should be faster if the implementation allows it. Should not modify the
+original locations of the removed elements besides passing them into a
+function.</p>
+</div><h3 id='tymethod.impl_add' class='method stab '><code>unsafe fn <a href='#tymethod.impl_add' class='fnname'>impl_add</a>(&amp;mut self, value: T)</code></h3><div class='docblock'><p>Adds an element to the container. Should not check if the container is
+full.</p>
+</div><h3 id='tymethod.impl_extend' class='method stab '><code>fn <a href='#tymethod.impl_extend' class='fnname'>impl_extend</a>(&amp;mut self, value: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Adds multiple elements to the container, returning the number of elements
+added. Should do the same as adding copies of the elements from the array
+into the container until the container is full, and should be faster if
+the implementation allows it. Should copy the elements from the array
+without modifying the original array.</p>
+</div><h3 id='tymethod.impl_clear' class='method stab '><code>unsafe fn <a href='#tymethod.impl_clear' class='fnname'>impl_clear</a>&lt;F&gt;(&amp;mut self, f: F) <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>)</span></code></h3><div class='docblock'><p>Marks a container as empty after running a function on all of its
+elements. Should not modify the container&#39;s data besides passing them into
+the function.</p>
+</div><h3 id='tymethod.impl_copy' class='method stab '><code>unsafe fn <a href='#tymethod.impl_copy' class='fnname'>impl_copy</a>&lt;F&gt;(&amp;mut self, data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>, f: F) <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>)</span></code></h3><div class='docblock'><p>Copies the container&#39;s data to a new buffer and runs a given function on
+the original buffer. Should not check if <code>self.len() &lt;= data.len()</code>
+and should not modify the data besides passing them into the function.
+Should preferably make the data contiguous after the copy, if possible.
+The buffers will not overlap.</p>
+</div></div>
+        <h2 id='implementors'>Implementors</h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><code>impl&lt;'a, T: 'a&gt; <a class='trait' href='../../../../../../main/rust/data/container/generic/dev/trait.ContainerImpl.html' title='main::rust::data::container::generic::dev::ContainerImpl'>ContainerImpl</a>&lt;'a, T&gt; for <a class='struct' href='../../../../../../main/rust/data/container/vec/struct.Vec.html' title='main::rust::data::container::vec::Vec'>Vec</a>&lt;'a, T&gt;</code></li>
+<li><code>impl&lt;'a, T: 'a + <a class='trait' href='../../../../../../main/rust/data/container/prio_queue/trait.Priority.html' title='main::rust::data::container::prio_queue::Priority'>Priority</a>&gt; <a class='trait' href='../../../../../../main/rust/data/container/generic/dev/trait.ContainerImpl.html' title='main::rust::data::container::generic::dev::ContainerImpl'>ContainerImpl</a>&lt;'a, T&gt; for <a class='struct' href='../../../../../../main/rust/data/container/prio_queue/struct.PrioQueue.html' title='main::rust::data::container::prio_queue::PrioQueue'>PrioQueue</a>&lt;'a, T&gt;</code></li>
+<li><code>impl&lt;'a, T: 'a&gt; <a class='trait' href='../../../../../../main/rust/data/container/generic/dev/trait.ContainerImpl.html' title='main::rust::data::container::generic::dev::ContainerImpl'>ContainerImpl</a>&lt;'a, T&gt; for <a class='struct' href='../../../../../../main/rust/data/container/queue/struct.Queue.html' title='main::rust::data::container::queue::Queue'>Queue</a>&lt;'a, T&gt;</code></li>
+</ul><script type="text/javascript" async
+                              src="../../../../../../implementors/main/rust/data/container/generic/dev/trait.ContainerImpl.js">
+                      </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../../../../../";
+        window.currentCrate = "main";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../../../../jquery.js"></script>
+    <script src="../../../../../../main.js"></script>
+    
+    <script async src="../../../../../../search-index.js"></script>
+</body>
+</html>

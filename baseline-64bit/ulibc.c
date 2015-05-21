@@ -55,7 +55,7 @@ void __default_exit__( void ) {
 ** invoke spawnp() with the priority of the calling process
 */
 
-int32_t spawn( void (*entry)(void) ) {
+int64_t spawn( void (*entry)(void) ) {
 	return( spawnp(entry,get_process_info(INFO_PRIO,0)) );
 }
 

@@ -37,6 +37,11 @@ START_OFFSET	= 0x00007E00
 SECTOR_SIZE	= 0x200		/* typical sector size for floppy & HD */
 OFFSET_LIMIT	= 65536 - SECTOR_SIZE
 
+PML4T_ADDRESS	= 0x10000	/* location of page map level 4 table */
+PDPT_ADDRESS	= 0x11000	/* location of page directory pointer tables */
+PDT_ADDRESS	= 0x12000	/* location of page directory table */
+PT_ADDRESS	= 0x13000	/* location of page tables (x3) */
+
 /*
 ** Symbol for locating the beginning of the code.
 */
@@ -105,11 +110,17 @@ diskok:
 ** We've got the second block of the bootstrap program in memory.
 **
 ** Past this point, we need to access higher memory addresses to load the user
-** program. Therefore, we have to enable unreal mode.
+** program. We're going to have to enable protected mode, so, we need to do a
+** few things ahead of time.
 */
 	movw	$1, part2
 
-	call	switch_unreal
+	pushw	%ds
+	call	enable_A20
+	call	check_mem
+	call	move_gdt
+	lgdt	gdt_48 + BOOT_ADDRESS
+	popw	%ds
 
 /*
 ** Now read all of the user's program blocks.  Use %di to point to the
@@ -125,21 +136,16 @@ diskok:
 	popw	%ds
 
 nextblock:
-	xorl	%eax, %eax
-	movw	(%di), %ax	/* get the # of sectors */
-	testw	%ax, %ax	/* is it zero? */
+	movl	(%di), %eax	/* get the # of sectors */
+	testl	%eax, %eax	/* is it zero? */
 	jz	done_loading	/*   yes, nothing more to load. */
 
-	subw	$2, %di
-	movw	(%di), %bx	/* get the segment value */
-	movw	%bx, %es	/*   and copy it to %es */
-	subw	$2, %di
-	xorl	%ebx, %ebx
-	movw	(%di), %bx	/* get the address offset */
-	subw	$2, %di
+	subw	$4, %di
+	movl	(%di), %ebx	/* get the address */
+	subw	$4, %di
 	pushw	%di		/* save di */
 	call	readprog	/* read this program block, */
-	popw	%di		/* and restore di */
+	popl	%edi		/* and restore di */
 	jmp	nextblock	/*   then go back and read the next one. */
 
 /*
@@ -154,7 +160,6 @@ readprog:
 	movb	part2, %al
 	testb	%al, %al
 	jz	doread			/* if we're on part 2 */
-	pushw	%es			/* save destination segment */
 	pushl	%ebx			/* save destination offset */
 
 doread:
@@ -175,23 +180,22 @@ copydata:
 	testb	%al, %al
 	jz	donecopy		/* if we're on part 2 */
 	popl	%ebx			/* get destination offset */
-	popw	%es			/* get destination segment */
+	movl	%ebx, %edi
+
+	movl	$TEMPRD_ADDR, %esi	/* get source address */
+
+	pushl	%ecx
+	movl	$SECTOR_SIZE, %ecx	/* get count of bytes */
+	call	copy_protected
+	popl	%ecx
+
+	xorl	%esi, %esi
 
 donecopy:
 	movw	$msg_dot, %si		/* print status: a dot */
 	call	dispMsg
-	cmpl	$OFFSET_LIMIT, %ebx	/* have we reached the offset limit? */
-	je	adjust			/* Yes--must adjust the es register */
-	addl	$SECTOR_SIZE, %ebx	/* No--just adjust the block size to */
-	jmp	readcont2		/*     the offset and continue. */
+	addl	$SECTOR_SIZE, %ebx	/* load next sector */
 
-adjust:
-	movl	$0, %ebx	/* start offset over again */
-	movw	%es, %ax
-	addw	$0x1000, %ax	/* move segment pointer to next chunk */
-	movw	%ax, %es
-
-readcont2:
 	movb	%ch, %al	/* mark down cylinder */
 	movb	%cl, %ah
 	shr	$6, %ah
@@ -319,11 +323,11 @@ boot_sig:
 	.word 0xAA55
 
 /**
-** Switches to unreal mode. A lot of this code was previously done after the
-** entire program was loaded, but we have to do it before in order to access
-** high memory.
+** Switches to protected mode and copies over the data for the OS. A lot of this
+** code was previously done after the entire program was loaded, but we have to
+** do it before in order to access high memory.
 */
-switch_unreal:
+copy_protected:
 	pushw	%es		/* save es */
 	pushw	%ds		/* save ds */
 
@@ -331,11 +335,8 @@ switch_unreal:
 	movb	$0x80, %al	/* disable NMIs */
 	outb	%al, $0x70
 
-	call	enable_A20
-	call	check_mem
-	call	move_gdt
-
-	lgdt	gdt_48 + BOOT_ADDRESS
+	movw	%cs, %si
+	movw	%si, %ds	/* fix ds because that causes errors? */
 
 	movl	%cr0, %eax	/* get current CR0 */
 	orl	$1, %eax	/* set the PE bit */
@@ -347,6 +348,9 @@ switch_unreal:
 	movw	$GDT_DATA, %bx	/* select data descriptor from GDT */
 	movw	%bx, %ds	/* and let %ds, %es access all of memory */
 	movw	%bx, %es
+
+	//cld
+	//rep	addr32 movsb	/* copy bytes */
 
 	andl	$0xFFFE, %eax	/* turn off PE bit */
 	movl	%eax, %cr0	/* and store it back. */
@@ -372,11 +376,24 @@ finish:
 	movw	%cs, %si
 	movw	%si, %ds	/* fix ds because that causes errors? */
 
+	call	setup_paging
+
 	lidt	idt_48 + BOOT_ADDRESS
 
-	movl	%cr0, %eax	/* get current CR0 */
-	orl	$1, %eax	/* set the PE bit */
-	movl	%eax, %cr0	/* and store it back. */
+	movl	$0xA0, %eax		/* enable PAE/PGE bits */
+	movl	%eax, %cr4
+
+	movl	$PML4T_ADDRESS, %edx	/* set PML4T pointer */
+	movl	%edx, %cr3
+
+	movl	$0xC0000080, %ecx	/* get current EFER MSR */
+	rdmsr
+	orl	$0x00000100, %eax	/* set LME bit */
+	wrmsr				/* and store it back */
+
+	movl	%cr0, %eax		/* get current CR0 */
+	orl	$0x80000001, %eax	/* set the PE bit and the PG bit */
+	movl	%eax, %cr0		/* and store it back */
 
 	/*
 	** We'll be in protected mode at the start of the user's code
@@ -387,6 +404,8 @@ finish:
 	** and CS with the proper values so that when we land at the
 	** destination address in protected mode, the next instruction
 	** fetch doesn't cause a fault.
+	**
+	** After this point, we should be in full long mode.
 	**
 	** The old code for this:
 	**
@@ -539,6 +558,90 @@ stack_seg:	/* limit FFFFF, base 0, R/W data seg, 32-bit 4K */
 end_gdt:
 gdt_len = end_gdt - start_gdt
 
+PAGE_PW  = PAGE_PRESENT | PAGE_WRITE
+PT_LOW_START = 0x00000000 | PAGE_PW
+PT_LOW_END   = 0x00080000
+PT_HIGH1    = 0x00100000 | PAGE_PW
+PT_HIGH2    = 0x00800000 | PAGE_PW
+PT_HIGH_END = 0x00e00000
+
+PT0_ADDRESS = PT_ADDRESS
+PT1_ADDRESS = PT_ADDRESS + 0x1000
+PT2_ADDRESS = PT_ADDRESS + 0x2000
+
+/*
+** Sets up the page table to include known valid addresses:
+** 0x00000000 through 0x00010000 (BIOS;       64 kiB /   16 pages)
+** 0x00010000 through 0x00016000 (page table; 24 kiB /    6 pages)
+** 0x00016000 through 0x0007ffff (OS stack;  424 kiB /  106 pages)
+** 0x00100000 through 0x00dfffff (OS;       4096 kiB / 1024 pages)
+*/
+setup_paging:
+	movl	%esp, %ebp
+	pushl	%esp
+
+	/* clear tables -> no valid/present pages */
+	movl	$PML4T_ADDRESS, %edi	/* set address to clear */
+	movl	$0x1000, %ecx		/* set number of words to clear */
+	xorl	%eax, %eax		/* set data to write (zero) */
+	cld				/* clear direction flag */
+	rep	stosl			/* block write */
+
+	/* make one page map level 4 table entry */
+	movl	$PDPT_ADDRESS, %eax	/* load address of PDPT */
+	orl	$PAGE_PW, %eax		/* mark present and writable */
+	movl	$PML4T_ADDRESS, %edi	/* get address of PML4T */
+	movl	%eax, (%edi)		/* store as first PML4T entry */
+
+	/* make one page directory pointer table entry */
+	movl	$PDT_ADDRESS, %eax	/* load address of page dir table */
+	orl	$PAGE_PW, %eax		/* mark present and writable */
+	movl	$PDPT_ADDRESS, %edi	/* get address of PDPT */
+	movl	%eax, (%edi)		/* store as first PDPT entry */
+
+	/* make three page directory table entries */
+	movl	$PT_ADDRESS, %eax	/* load address of first page table */
+	orl	$PAGE_PW, %eax		/* mark present and writable */
+	movl	$PDT_ADDRESS, %edi	/* get address of PDT */
+	movl	%eax, 0x000(%edi)	/* first block: address 0x00000000 */
+	addl	0x1000, %eax		/* get address of next table */
+	movl	%eax, 0x800(%edi)	/* second block: address 0x00100000 */
+	addl	0x1000, %eax		/* get address of next table */
+	movl	%eax, 0x808(%edi)	/* third block: address 0x00500000 */
+
+	/* make low page table */
+	movl	$PT_LOW_START, %eax
+	movl	$PT_LOW_END, %ecx
+	movl	$PT0_ADDRESS, %edi
+	call	make_pages
+
+	/* make first high page table */
+	movl	$PT_HIGH1, %eax
+	movl	$PT_HIGH2, %ecx
+	movl	$PT1_ADDRESS, %edi
+	call	make_pages
+
+	/* make second high page table */
+	movl	$PT_HIGH2, %eax
+	movl	$PT_HIGH_END, %ecx
+	movl	$PT2_ADDRESS, %edi
+	call	make_pages
+
+	popl	%esp
+	ret
+
+/*
+** Writes %eax address to %edi page table until %ecx address is reached.
+** Assumes that %eax already has necessary page flags.
+*/
+make_pages:
+	movl	%eax, (%edi)
+	addl	$8, %edi
+	addl	$0x1000, %eax
+	cmpl	%eax, %ecx
+	jb	make_pages
+	ret
+
 /*
 ** The end of this program will contain a list of the sizes and load
 ** addresses of all of the blocks to be loaded.  These values are
@@ -555,10 +658,10 @@ gdt_len = end_gdt - start_gdt
 ** to be loaded, their values appear just before the previous set.
 */
 
-	.org	SECTOR_SIZE * 2 - 2 * 3
-firstoffset:
-	.word	0	/* target offset will go here */
-firstsegment:
-	.word	0	/* target segment will go here */
+	.org	SECTOR_SIZE * 2 - 4 * 3
+
+	.long	0	/* zero indicates end of data */
+firstaddress:
+	.long	0	/* target address will go here */
 firstcount:
-	.word	0	/* n_sectors for 1st module will go here */
+	.long	0	/* n_sectors for 1st module will go here */

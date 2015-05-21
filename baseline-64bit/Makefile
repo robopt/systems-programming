@@ -55,13 +55,16 @@ CPP = cpp
 CPPFLAGS = $(USER_OPTIONS) -nostdinc $(INCLUDES)
 
 CC = gcc
-CFLAGS = -m32 -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
+CFLAGS = -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
+CFLAGS_32 = -m32
 
 AS = as -Wall
-ASFLAGS = --32
+ASFLAGS =
+ASFLAGS_32 = --32
 
 LD = ld
-LDFLAGS = -melf_i386
+LDFLAGS = -melf_x86_64
+LDFLAGS_32 = -melf_i386
 
 #
 # Transformation rules - these ensure that all compilation
@@ -124,16 +127,16 @@ SOURCES = $(BOOT_SRC) $(S_SRC) $(C_SRC)
 #
 
 usb.image: bootstrap.b prog.b prog.nl prog.nlf BuildImage
-	./BuildImage -o usb.image -b bootstrap.b prog.b 0x10000
+	./BuildImage -o usb.image -b bootstrap.b prog.b 0x100000
 
 prog.out: $(OBJECTS)
 	$(LD) $(LDFLAGS) -o prog.out $(OBJECTS)
 
 prog.o:	$(OBJECTS)
-	$(LD) $(LDFLAGS) -o prog.o -Ttext 0x10000 $(OBJECTS) $(U_LIBS)
+	$(LD) $(LDFLAGS) -o prog.o -Ttext 0x100000 $(OBJECTS) $(U_LIBS)
 
 prog.b:	prog.o
-	$(LD) $(LDFLAGS) -o prog.b -s --oformat binary -Ttext 0x10000 prog.o
+	$(LD) $(LDFLAGS) -o prog.b -s --oformat binary -Ttext 0x100000 prog.o
 
 #
 # Targets for copying bootable image onto boot devices

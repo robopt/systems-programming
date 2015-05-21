@@ -64,9 +64,9 @@
 **      pointer to the new PCB
 */
 
-pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
+pcb_t *_create_process( void *entry, uint8_t prio ) {
 	pcb_t *new;
-	uint32_t *ptr;
+	uint64_t *ptr;
 
 	// allocate the new structures
 
@@ -100,7 +100,7 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
 
 	// first, create a pointer to the longword after the stack
 
-	ptr = (uint32_t *) (new->stack + 1);
+	ptr = (uint64_t *) (new->stack + 1);
 
 	// save the buffering 0 at the end
 
@@ -110,7 +110,7 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
 	// without calling exit(), we return "into" a function which
 	// calls exit()
 
-	*--ptr = (uint32_t) __default_exit__;
+	*--ptr = (uint64_t) __default_exit__;
 
 	// locate the context save area
 
@@ -118,14 +118,8 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
 
 	// fill in the non-zero entries in the context save area
 
-	new->context->eip    = entry;
-	new->context->cs     = GDT_CODE;
-	new->context->ss     = GDT_STACK;
-	new->context->ds     = GDT_DATA;
-	new->context->es     = GDT_DATA;
-	new->context->fs     = GDT_DATA;
-	new->context->gs     = GDT_DATA;
-	new->context->eflags = DEFAULT_EFLAGS;
+	new->context->rip    = entry;
+	new->context->rflags = DEFAULT_RFLAGS;
 
 	// fill in the remaining important fields
 
@@ -205,7 +199,7 @@ void _init( void ) {
 	** longword in the system stack.
 	*/
 
-	_system_esp = ((uint32_t *) ( (&_system_stack) + 1)) - 2;
+	_system_rsp = ((uint64_t *) ( (&_system_stack) + 1)) - 2;
 
 	/*
 	** Create the initial process
@@ -214,7 +208,7 @@ void _init( void ) {
 	** changes, SO MUST THIS!!!
 	*/
 
-	pcb = _create_process( (uint32_t) init, PRIO_SYSTEM );
+	pcb = _create_process( (void*)(unsigned long)init, PRIO_SYSTEM );
 	if( pcb == NULL ) {
 		_kpanic( "_init", "init() creation failed" );
 	}
@@ -228,7 +222,7 @@ void _init( void ) {
 	** Next, create the idle process
 	*/
 
-	pcb = _create_process( (uint32_t) idle, PRIO_USER_LOW );
+	pcb = _create_process( (void*)(unsigned long)idle, PRIO_USER_LOW );
 	if( pcb == NULL ) {
 		_kpanic( "_init", "idle() creation failed" );
 	}

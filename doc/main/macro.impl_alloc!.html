@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `impl_alloc!` macro in crate `main`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, impl_alloc!">
+
+    <title>main::impl_alloc! - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='index.html'>main</a></p><script>window.sidebarCurrent = {name: 'impl_alloc!', ty: 'macro', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content macro">
+<h1 class='fqn'><span class='in-band'><a href='index.html'>main</a>::<wbr><a class='macro' href=''>impl_alloc!</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="#" title="collapse all docs">[&minus;]</a>
+        </span><a id='src-7916' class='srclink' href='../src/main/rust/data/allocator.rs.html#33-67' title='goto source code'>[src]</a></span></h1>
+<pre class='rust macro'>
+<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>impl_alloc</span> {
+	(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span>:<span class='ident'>ident</span>,
+			<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>pool_size</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>refs_size</span>:<span class='ident'>expr</span>,
+			<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>alloc_err</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>dealloc_err</span>:<span class='ident'>expr</span>) <span class='op'>=&gt;</span> {
+		<span class='kw'>impl</span> <span class='ident'>Alloc</span> <span class='kw'>for</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span> {
+			<span class='attribute'>#[<span class='ident'>inline</span>(<span class='ident'>always</span>)]</span>
+			<span class='kw'>fn</span> <span class='ident'>allocator</span>() <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='kw-2'>mut</span> <span class='ident'>Allocator</span><span class='op'>&lt;</span><span class='kw'>Self</span><span class='op'>&gt;</span> {
+				<span class='kw'>static</span> <span class='kw-2'>mut</span> <span class='ident'>pool</span>: [<span class='ident'>usize</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>pool_size</span>] <span class='op'>=</span> [<span class='number'>0</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>pool_size</span>];
+				<span class='kw'>static</span> <span class='kw-2'>mut</span> <span class='ident'>refs</span>: [<span class='ident'>usize</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>refs_size</span>] <span class='op'>=</span> [<span class='number'>0</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>refs_size</span>];
+				<span class='kw'>static</span> <span class='kw-2'>mut</span> <span class='ident'>alloc</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>Allocator</span><span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span><span class='op'>&gt;&gt;</span> <span class='op'>=</span> <span class='prelude-ty'>Option</span>::<span class='prelude-val'>None</span>;
+				<span class='kw'>unsafe</span> {
+					<span class='kw'>match</span> <span class='ident'>alloc</span> {
+						<span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>a</span>) <span class='op'>=&gt;</span> <span class='ident'>a</span>,
+						<span class='prelude-ty'>Option</span>::<span class='prelude-val'>None</span> <span class='op'>=&gt;</span> {
+							<span class='ident'>alloc</span> <span class='op'>=</span> <span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='ident'>Allocator</span>::<span class='ident'>new</span>(
+								<span class='ident'>transmute</span>::<span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>usize</span>, <span class='op'>*</span><span class='kw-2'>mut</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>pool</span>[<span class='number'>0</span>]),
+								<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>refs</span>[<span class='number'>0</span>],
+								<span class='ident'>min</span>(
+									<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>pool_size</span> <span class='op'>*</span> <span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>() <span class='op'>/</span> <span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span><span class='op'>&gt;</span>(),
+									<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>refs_size</span>
+								),
+								<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>alloc_err</span>,
+								<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>dealloc_err</span>,
+							));
+							<span class='kw'>match</span> <span class='ident'>alloc</span> {
+								<span class='prelude-ty'>Option</span>::<span class='prelude-val'>Some</span>(<span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>a</span>) <span class='op'>=&gt;</span> <span class='ident'>a</span>,
+								<span class='prelude-ty'>Option</span>::<span class='prelude-val'>None</span> <span class='op'>=&gt;</span> <span class='macro'>unreachable</span><span class='macro'>!</span>(),
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+</pre>
+<div class='docblock'><p>Easy way to implement Alloc.</p>
+
+<h1 id="example" class='section-header'><a
+                           href="#example">Example</a></h1><pre id='rust-example-rendered' class='rust '>
+<span class='kw'>struct</span> <span class='ident'>Thing</span>(<span class='ident'>u64</span>, <span class='ident'>u64</span>, <span class='ident'>u64</span>, <span class='ident'>u64</span>);
+<span class='macro'>impl_alloc</span><span class='macro'>!</span>(<span class='ident'>Thing</span>, <span class='number'>4000</span>, <span class='number'>1000</span>, <span class='string'>&quot;Alloc Failed&quot;</span>, <span class='string'>&quot;Dealloc Failed&quot;</span>);
+</pre>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "main";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>

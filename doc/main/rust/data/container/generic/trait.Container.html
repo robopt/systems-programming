@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Container` trait in crate `main`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Container">
+
+    <title>main::rust::data::container::generic::Container - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../../../../index.html'>main</a>::<wbr><a href='../../../index.html'>rust</a>::<wbr><a href='../../index.html'>data</a>::<wbr><a href='../index.html'>container</a>::<wbr><a href='index.html'>generic</a></p><script>window.sidebarCurrent = {name: 'Container', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content trait">
+<h1 class='fqn'><span class='in-band'>Trait <a href='../../../../index.html'>main</a>::<wbr><a href='../../../index.html'>rust</a>::<wbr><a href='../../index.html'>data</a>::<wbr><a href='../index.html'>container</a>::<wbr><a href='index.html'>generic</a>::<wbr><a class='trait' href=''>Container</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="#" title="collapse all docs">[&minus;]</a>
+        </span><a id='src-419' class='srclink' href='../../../../../src/main/rust/data/container/generic/mod.rs.html#9-287' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait Container&lt;'a, T: 'a&gt; <span class='where'>where Self: <a class='trait' href='../../../../../main/rust/data/container/generic/dev/trait.ContainerImpl.html' title='main::rust::data::container::generic::dev::ContainerImpl'>ContainerImpl</a>&lt;'a, T&gt;</span> {
+    fn <a href='#method.from_full' class='fnname'>from_full</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>) -&gt; Self { ... }
+    unsafe fn <a href='#method.from_existing' class='fnname'>from_existing</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self { ... }
+    unsafe fn <a href='#method.from_empty' class='fnname'>from_empty</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>) -&gt; Self { ... }
+    unsafe fn <a href='#method.from_full_ptr' class='fnname'>from_full_ptr</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a>, cap: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self { ... }
+    unsafe fn <a href='#method.from_existing_ptr' class='fnname'>from_existing_ptr</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a>, cap: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self { ... }
+    unsafe fn <a href='#method.from_empty_ptr' class='fnname'>from_empty_ptr</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a>, cap: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self { ... }
+    fn <a href='#method.len' class='fnname'>len</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> { ... }
+    fn <a href='#method.capacity' class='fnname'>capacity</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> { ... }
+    fn <a href='#method.is_empty' class='fnname'>is_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a> { ... }
+    fn <a href='#method.is_full' class='fnname'>is_full</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a> { ... }
+    fn <a href='#method.peek_mut' class='fnname'>peek_mut</a>(&amp;mut self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;&amp;mut T&gt; { ... }
+    fn <a href='#method.peek_mut_or_panic' class='fnname'>peek_mut_or_panic</a>(&amp;mut self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; &amp;mut T { ... }
+    fn <a href='#method.peek' class='fnname'>peek</a>(&amp;self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;&amp;T&gt; { ... }
+    fn <a href='#method.peek_or_panic' class='fnname'>peek_or_panic</a>(&amp;self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; &amp;T { ... }
+    fn <a href='#method.remove' class='fnname'>remove</a>(&amp;mut self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;T&gt; { ... }
+    fn <a href='#method.remove_or_panic' class='fnname'>remove_or_panic</a>(&amp;mut self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; T { ... }
+    fn <a href='#method.remove_and_zero' class='fnname'>remove_and_zero</a>(&amp;mut self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;T&gt; { ... }
+    fn <a href='#method.remove_and_zero_or_panic' class='fnname'>remove_and_zero_or_panic</a>(&amp;mut self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; T { ... }
+    fn <a href='#method.forget' class='fnname'>forget</a>(&amp;mut self, n: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> { ... }
+    fn <a href='#method.forget_and_zero' class='fnname'>forget_and_zero</a>(&amp;mut self, n: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> { ... }
+    fn <a href='#method.add_or_panic' class='fnname'>add_or_panic</a>(&amp;mut self, value: T, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) { ... }
+    fn <a href='#method.extend' class='fnname'>extend</a>(&amp;mut self, values: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> { ... }
+    fn <a href='#method.extend_or_panic' class='fnname'>extend_or_panic</a>(&amp;mut self, values: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) { ... }
+    fn <a href='#method.clear' class='fnname'>clear</a>(&amp;mut self) { ... }
+    fn <a href='#method.clear_and_zero' class='fnname'>clear_and_zero</a>(&amp;mut self) { ... }
+    unsafe fn <a href='#method.move_data' class='fnname'>move_data</a>(&amp;mut self, data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>) { ... }
+    unsafe fn <a href='#method.move_data_and_zero' class='fnname'>move_data_and_zero</a>(&amp;mut self, data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>) { ... }
+}</pre><div class='docblock'><p>Generic container; automatically extends ContainerImpl.</p>
+</div>
+            <h2 id='provided-methods'>Provided Methods</h2>
+            <div class='methods'>
+        <h3 id='method.from_full' class='method stab '><code>fn <a href='#method.from_full' class='fnname'>from_full</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>) -&gt; Self</code></h3><div class='docblock'><p>Constructs a container an existing array of data.</p>
+</div><h3 id='method.from_existing' class='method stab '><code>unsafe fn <a href='#method.from_existing' class='fnname'>from_existing</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self</code></h3><div class='docblock'><p>Constructs a container from an existing array of data.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics if <code>len &gt; data.len()</code>.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because the elements of <code>data[len..]</code> are not dropped, even
+if <code>len &lt; data.len()</code>.</p>
+</div><h3 id='method.from_empty' class='method stab '><code>unsafe fn <a href='#method.from_empty' class='fnname'>from_empty</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>) -&gt; Self</code></h3><div class='docblock'><p>Constructs a container from an empty array of data.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because the elements of <code>data</code> are not dropped.</p>
+</div><h3 id='method.from_full_ptr' class='method stab '><code>unsafe fn <a href='#method.from_full_ptr' class='fnname'>from_full_ptr</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a>, cap: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self</code></h3><div class='docblock'><p>Constructs a container from a pointer to an existing array of data.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because it assumes that <code>data</code> is <code>cap</code> long and
+initialized.</p>
+</div><h3 id='method.from_existing_ptr' class='method stab '><code>unsafe fn <a href='#method.from_existing_ptr' class='fnname'>from_existing_ptr</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a>, cap: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self</code></h3><div class='docblock'><p>Constructs a container from a pointer to an existing array of data.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because it assumes that the array is uninitialised after
+the first <code>len</code> elements and can contain at least <code>cap</code> elements.</p>
+</div><h3 id='method.from_empty_ptr' class='method stab '><code>unsafe fn <a href='#method.from_empty_ptr' class='fnname'>from_empty_ptr</a>(data: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a>, cap: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self</code></h3><div class='docblock'><p>Constructs a container from a pointer to an uninitialised array.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because it assumes that the array is uninitialised and can
+contain at least <code>cap</code> elements.</p>
+</div><h3 id='method.len' class='method stab '><code>fn <a href='#method.len' class='fnname'>len</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Returns the current number of elements in the container in O(1) time.</p>
+</div><h3 id='method.capacity' class='method stab '><code>fn <a href='#method.capacity' class='fnname'>capacity</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Returns the maximum number of elements that the container can hold in O(1)
+time.</p>
+</div><h3 id='method.is_empty' class='method stab '><code>fn <a href='#method.is_empty' class='fnname'>is_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h3><div class='docblock'><p>Returns the same value as <code>len() &gt; 0</code>, but may be faster if the
+implementation allows it.</p>
+</div><h3 id='method.is_full' class='method stab '><code>fn <a href='#method.is_full' class='fnname'>is_full</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h3><div class='docblock'><p>Returns the same value as <code>len() == capacity()</code>, but may be faster
+if the implementation allows it.</p>
+</div><h3 id='method.peek_mut' class='method stab '><code>fn <a href='#method.peek_mut' class='fnname'>peek_mut</a>(&amp;mut self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;&amp;mut T&gt;</code></h3><div class='docblock'><p>Returns a mutable reference to the next element in the container which
+would be removed by a call to <code>remove()</code>.</p>
+</div><h3 id='method.peek_mut_or_panic' class='method stab '><code>fn <a href='#method.peek_mut_or_panic' class='fnname'>peek_mut_or_panic</a>(&amp;mut self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; &amp;mut T</code></h3><div class='docblock'><p>Returns a mutable reference to the next element in the container which
+would be removed by a call to <code>remove()</code>.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics with <code>err</code> if <code>is_empty()</code>.</p>
+</div><h3 id='method.peek' class='method stab '><code>fn <a href='#method.peek' class='fnname'>peek</a>(&amp;self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;&amp;T&gt;</code></h3><div class='docblock'><p>Returns an immutable reference to the next element in the container which
+would be removed by a call to <code>remove()</code>.</p>
+</div><h3 id='method.peek_or_panic' class='method stab '><code>fn <a href='#method.peek_or_panic' class='fnname'>peek_or_panic</a>(&amp;self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; &amp;T</code></h3><div class='docblock'><p>Returns an immutable reference to the next element in the container which
+would be removed by a call to <code>remove()</code>.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics with <code>err</code> if <code>is_empty()</code>.</p>
+</div><h3 id='method.remove' class='method stab '><code>fn <a href='#method.remove' class='fnname'>remove</a>(&amp;mut self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;T&gt;</code></h3><div class='docblock'><p>Removes a value from the container and returns the value, or <code>None</code> if the
+container is empty.</p>
+</div><h3 id='method.remove_or_panic' class='method stab '><code>fn <a href='#method.remove_or_panic' class='fnname'>remove_or_panic</a>(&amp;mut self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; T</code></h3><div class='docblock'><p>Removes a value from the container and returns the value.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics with <code>err</code> if <code>is_empty()</code>.</p>
+</div><h3 id='method.remove_and_zero' class='method stab '><code>fn <a href='#method.remove_and_zero' class='fnname'>remove_and_zero</a>(&amp;mut self) -&gt; <a class='enum' href='../../../../../main/rust/data/allocator/enum.Option.html' title='main::rust::data::allocator::Option'>Option</a>&lt;T&gt;</code></h3><div class='docblock'><p>Removes a value from the container and returns the value, or <code>None</code> if the
+container is empty. Zeroes out the value&#39;s original location in memory.</p>
+</div><h3 id='method.remove_and_zero_or_panic' class='method stab '><code>fn <a href='#method.remove_and_zero_or_panic' class='fnname'>remove_and_zero_or_panic</a>(&amp;mut self, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; T</code></h3><div class='docblock'><p>Removes a value from the container and returns the value. Zeroes out the
+value&#39;s original location in memory.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics with <code>err</code> if <code>is_empty()</code>.</p>
+</div><h3 id='method.forget' class='method stab '><code>fn <a href='#method.forget' class='fnname'>forget</a>(&amp;mut self, n: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Removes multiple values from the container and returns how many values
+were removed.</p>
+</div><h3 id='method.forget_and_zero' class='method stab '><code>fn <a href='#method.forget_and_zero' class='fnname'>forget_and_zero</a>(&amp;mut self, n: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Removes multiple values from the container and returns how many values
+were removed. Zeroes out the values&#39; original locations in memory.</p>
+</div><h3 id='method.add_or_panic' class='method stab '><code>fn <a href='#method.add_or_panic' class='fnname'>add_or_panic</a>(&amp;mut self, value: T, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>)</code></h3><div class='docblock'><p>Adds an element to the container.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics with <code>err</code> if <code>is_full()</code>.</p>
+</div><h3 id='method.extend' class='method stab '><code>fn <a href='#method.extend' class='fnname'>extend</a>(&amp;mut self, values: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h3><div class='docblock'><p>Adds multiple elements to the container and returns how many values were
+added. May be faster than multiple adds if the implementation allows it.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because it copies the original values in the array instead
+of moving them.</p>
+</div><h3 id='method.extend_or_panic' class='method stab '><code>fn <a href='#method.extend_or_panic' class='fnname'>extend_or_panic</a>(&amp;mut self, values: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a>, err: &amp;'static <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>)</code></h3><div class='docblock'><p>Adds multiple elements to the container. May be faster than multiple adds
+if the implementation allows it.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics if the value was partially added to the container.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because it copies the original values in the array instead
+of moving them.</p>
+</div><h3 id='method.clear' class='method stab '><code>fn <a href='#method.clear' class='fnname'>clear</a>(&amp;mut self)</code></h3><div class='docblock'><p>Drops all of the elements in the container.</p>
+</div><h3 id='method.clear_and_zero' class='method stab '><code>fn <a href='#method.clear_and_zero' class='fnname'>clear_and_zero</a>(&amp;mut self)</code></h3><div class='docblock'><p>Drops all of the elements in the container. Zeroes out the container&#39;s
+buffer.</p>
+</div><h3 id='method.move_data' class='method stab '><code>unsafe fn <a href='#method.move_data' class='fnname'>move_data</a>(&amp;mut self, data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>)</code></h3><div class='docblock'><p>Copies the container&#39;s data to a new pointer. Guarantees that the data
+will be contiguous after the copy.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics if <code>data.len() &lt; self.len()</code>.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because there will be two mutable references to the same
+data, and because <code>data[..self.len]</code> is not dropped.</p>
+</div><h3 id='method.move_data_and_zero' class='method stab '><code>unsafe fn <a href='#method.move_data_and_zero' class='fnname'>move_data_and_zero</a>(&amp;mut self, data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a>)</code></h3><div class='docblock'><p>Copies the container&#39;s data to a new pointer. Guarantees that the data
+will be contiguous after the copy.</p>
+
+<h1 id="panics" class='section-header'><a
+                           href="#panics">Panics</a></h1>
+<p>Panics if <code>data.len() &lt; self.len()</code>.</p>
+
+<h1 id="safety" class='section-header'><a
+                           href="#safety">Safety</a></h1>
+<p>This is unsafe because <code>data[..self.len]</code> is not dropped.</p>
+</div></div>
+        <h2 id='implementors'>Implementors</h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><code>impl&lt;'a, T: 'a, A: <a class='trait' href='../../../../../main/rust/data/container/generic/dev/trait.ContainerImpl.html' title='main::rust::data::container::generic::dev::ContainerImpl'>ContainerImpl</a>&lt;'a, T&gt;&gt; <a class='trait' href='../../../../../main/rust/data/container/generic/trait.Container.html' title='main::rust::data::container::generic::Container'>Container</a>&lt;'a, T&gt; for A</code></li>
+</ul><script type="text/javascript" async
+                              src="../../../../../implementors/main/rust/data/container/generic/trait.Container.js">
+                      </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../../../../";
+        window.currentCrate = "main";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../../../jquery.js"></script>
+    <script src="../../../../../main.js"></script>
+    
+    <script async src="../../../../../search-index.js"></script>
+</body>
+</html>
