@@ -11,8 +11,8 @@ The code for the (broken) 64-bit version is found in baselin-64bit.
 64-BIT DIFFS
 ------------
 In case you'd like to take a look at the list of not-working changes for the
-64-bit system, I've included these. That way, you don't have to mess around with
-git.
+64-bit system, I've included these in 64bit-diffs. That way, you don't have to
+mess around with git.
 
 
 RUST CODE

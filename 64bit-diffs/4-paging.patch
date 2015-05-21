@@ -1,0 +1,130 @@
+diff --git a/baseline/bootstrap.S b/baseline/bootstrap.S
+index 5a485ab..6970236 100644
+--- a/baseline/bootstrap.S
++++ b/baseline/bootstrap.S
+@@ -37,6 +37,11 @@ START_OFFSET	= 0x00007E00
+ SECTOR_SIZE	= 0x200		/* typical sector size for floppy & HD */
+ OFFSET_LIMIT	= 65536 - SECTOR_SIZE
+ 
++PML4T_ADDRESS	= 0x10000	/* location of page map level 4 table */
++PDPT_ADDRESS	= 0x11000	/* location of page directory pointer tables */
++PDT_ADDRESS	= 0x12000	/* location of page directory table */
++PT_ADDRESS	= 0x13000	/* location of page tables (x3) */
++
+ /*
+ ** Symbol for locating the beginning of the code.
+ */
+@@ -371,11 +376,19 @@ finish:
+ 	movw	%cs, %si
+ 	movw	%si, %ds	/* fix ds because that causes errors? */
+ 
++	call	setup_paging
++
+ 	lidt	idt_48 + BOOT_ADDRESS
+ 
+-	movl	%cr0, %eax	/* get current CR0 */
+-	orl	$1, %eax	/* set the PE bit */
+-	movl	%eax, %cr0	/* and store it back. */
++	movl	$0xA0, %eax		/* enable PAE/PGE bits */
++	movl	%eax, %cr4
++
++	movl	$PML4T_ADDRESS, %edx	/* set PML4T pointer */
++	movl	%edx, %cr3
++
++	movl	%cr0, %eax		/* get current CR0 */
++	orl	$0x80000001, %eax	/* set the PE bit and the PG bit */
++	movl	%eax, %cr0		/* and store it back */
+ 
+ 	/*
+ 	** We'll be in protected mode at the start of the user's code
+@@ -538,6 +551,90 @@ stack_seg:	/* limit FFFFF, base 0, R/W data seg, 32-bit 4K */
+ end_gdt:
+ gdt_len = end_gdt - start_gdt
+ 
++PAGE_PW  = PAGE_PRESENT | PAGE_WRITE
++PT_LOW_START = 0x00000000 | PAGE_PW
++PT_LOW_END   = 0x00080000
++PT_HIGH1    = 0x00100000 | PAGE_PW
++PT_HIGH2    = 0x00800000 | PAGE_PW
++PT_HIGH_END = 0x00e00000
++
++PT0_ADDRESS = PT_ADDRESS
++PT1_ADDRESS = PT_ADDRESS + 0x1000
++PT2_ADDRESS = PT_ADDRESS + 0x2000
++
++/*
++** Sets up the page table to include known valid addresses:
++** 0x00000000 through 0x00010000 (BIOS;       64 kiB /   16 pages)
++** 0x00010000 through 0x00016000 (page table; 24 kiB /    6 pages)
++** 0x00016000 through 0x0007ffff (OS stack;  424 kiB /  106 pages)
++** 0x00100000 through 0x00dfffff (OS;       4096 kiB / 1024 pages)
++*/
++setup_paging:
++	movl	%esp, %ebp
++	pushl	%esp
++
++	/* clear tables -> no valid/present pages */
++	movl	$PML4T_ADDRESS, %edi	/* set address to clear */
++	movl	$0x1000, %ecx		/* set number of words to clear */
++	xorl	%eax, %eax		/* set data to write (zero) */
++	cld				/* clear direction flag */
++	rep	stosl			/* block write */
++
++	/* make one page map level 4 table entry */
++	movl	$PDPT_ADDRESS, %eax	/* load address of PDPT */
++	orl	$PAGE_PW, %eax		/* mark present and writable */
++	movl	$PML4T_ADDRESS, %edi	/* get address of PML4T */
++	movl	%eax, (%edi)		/* store as first PML4T entry */
++
++	/* make one page directory pointer table entry */
++	movl	$PDT_ADDRESS, %eax	/* load address of page dir table */
++	orl	$PAGE_PW, %eax		/* mark present and writable */
++	movl	$PDPT_ADDRESS, %edi	/* get address of PDPT */
++	movl	%eax, (%edi)		/* store as first PDPT entry */
++
++	/* make three page directory table entries */
++	movl	$PT_ADDRESS, %eax	/* load address of first page table */
++	orl	$PAGE_PW, %eax		/* mark present and writable */
++	movl	$PDT_ADDRESS, %edi	/* get address of PDT */
++	movl	%eax, 0x000(%edi)	/* first block: address 0x00000000 */
++	addl	0x1000, %eax		/* get address of next table */
++	movl	%eax, 0x800(%edi)	/* second block: address 0x00100000 */
++	addl	0x1000, %eax		/* get address of next table */
++	movl	%eax, 0x808(%edi)	/* third block: address 0x00500000 */
++
++	/* make low page table */
++	movl	$PT_LOW_START, %eax
++	movl	$PT_LOW_END, %ecx
++	movl	$PT0_ADDRESS, %edi
++	call	make_pages
++
++	/* make first high page table */
++	movl	$PT_HIGH1, %eax
++	movl	$PT_HIGH2, %ecx
++	movl	$PT1_ADDRESS, %edi
++	call	make_pages
++
++	/* make second high page table */
++	movl	$PT_HIGH2, %eax
++	movl	$PT_HIGH_END, %ecx
++	movl	$PT2_ADDRESS, %edi
++	call	make_pages
++
++	popl	%esp
++	ret
++
++/*
++** Writes %eax address to %edi page table until %ecx address is reached.
++** Assumes that %eax already has necessary page flags.
++*/
++make_pages:
++	movl	%eax, (%edi)
++	addl	$8, %edi
++	addl	$0x1000, %eax
++	cmpl	%eax, %ecx
++	jb	make_pages
++	ret
++
+ /*
+ ** The end of this program will contain a list of the sizes and load
+ ** addresses of all of the blocks to be loaded.  These values are

@@ -1,0 +1,1202 @@
+diff --git a/baseline/Makefile b/baseline/Makefile
+index 8d11f5b..aafaad5 100644
+--- a/baseline/Makefile
++++ b/baseline/Makefile
+@@ -55,13 +55,16 @@ CPP = cpp
+ CPPFLAGS = $(USER_OPTIONS) -nostdinc $(INCLUDES)
+ 
+ CC = gcc
+-CFLAGS = -m32 -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
++CFLAGS = -std=c99 -fno-stack-protector -fno-builtin -Wall -Wextra -pedantic -Wstrict-prototypes $(CPPFLAGS)
++CFLAGS_32 = -m32
+ 
+ AS = as -Wall
+-ASFLAGS = --32
++ASFLAGS =
++ASFLAGS_32 = --32
+ 
+ LD = ld
+-LDFLAGS = -melf_i386
++LDFLAGS = -melf_x86_64
++LDFLAGS_32 = -melf_i386
+ 
+ #
+ # Transformation rules - these ensure that all compilation
+diff --git a/baseline/bootstrap.S b/baseline/bootstrap.S
+index 6970236..5360912 100644
+--- a/baseline/bootstrap.S
++++ b/baseline/bootstrap.S
+@@ -386,6 +386,11 @@ finish:
+ 	movl	$PML4T_ADDRESS, %edx	/* set PML4T pointer */
+ 	movl	%edx, %cr3
+ 
++	movl	$0xC0000080, %ecx	/* get current EFER MSR */
++	rdmsr
++	orl	$0x00000100, %eax	/* set LME bit */
++	wrmsr				/* and store it back */
++
+ 	movl	%cr0, %eax		/* get current CR0 */
+ 	orl	$0x80000001, %eax	/* set the PE bit and the PG bit */
+ 	movl	%eax, %cr0		/* and store it back */
+@@ -400,6 +405,8 @@ finish:
+ 	** destination address in protected mode, the next instruction
+ 	** fetch doesn't cause a fault.
+ 	**
++	** After this point, we should be in full long mode.
++	**
+ 	** The old code for this:
+ 	**
+ 	**	.byte	06xx, 0xEA
+diff --git a/baseline/clock.c b/baseline/clock.c
+index 8b3d6e4..9441bef 100644
+--- a/baseline/clock.c
++++ b/baseline/clock.c
+@@ -37,14 +37,14 @@
+ 
+ // pinwheel control variables
+ 
+-static uint32_t _pinwheel;	// pinwheel counter
+-static uint32_t _pindex;	// index into pinwheel string
++static uint64_t _pinwheel;	// pinwheel counter
++static uint64_t _pindex;	// index into pinwheel string
+ 
+ /*
+ ** PUBLIC GLOBAL VARIABLES
+ */
+ 
+-uint32_t _system_time;		// the current system time
++uint64_t _system_time;		// the current system time
+ 
+ /*
+ ** PRIVATE FUNCTIONS
+@@ -86,7 +86,7 @@ static void _clock_isr( int vector, int code ) {
+ 	*/
+ 
+ 	while( !_queue_empty(_sleeping) &&
+-	       (uint32_t) _queue_kpeek(_sleeping) <= _system_time ) {
++	       (uint64_t) _queue_kpeek(_sleeping) <= _system_time ) {
+ 
+ 		// time to wake up!  remove it from the queue
+ 		pcb = (pcb_t *) _queue_remove( _sleeping );
+@@ -145,7 +145,7 @@ static void _clock_isr( int vector, int code ) {
+ */
+ 
+ void _clock_modinit( void ) {
+-	uint32_t divisor;
++	uint64_t divisor;
+ 
+ 	// start the pinwheel
+ 
+diff --git a/baseline/clock.h b/baseline/clock.h
+index e3a43f2..676631a 100644
+--- a/baseline/clock.h
++++ b/baseline/clock.h
+@@ -62,7 +62,7 @@
+ ** Globals
+ */
+ 
+-extern uint32_t	_system_time;	// the current system time
++extern uint64_t	_system_time;	// the current system time
+ 
+ /*
+ ** Prototypes
+diff --git a/baseline/isr_stubs.S b/baseline/isr_stubs.S
+index 7ac694e..64a6284 100644
+--- a/baseline/isr_stubs.S
++++ b/baseline/isr_stubs.S
+@@ -16,7 +16,6 @@
+ **	This makes it possible for a common ISR to determine which
+ **	interrupted occurred.
+ */
+-	.arch	i386
+ 
+ #include "bootstrap.h"
+ 
+@@ -37,14 +36,14 @@
+ #define	ISR(vector)			\
+ 	.globl	__isr_##vector		; \
+ __isr_##vector:				; \
+-	pushl	$0			; \
+-	pushl	$vector			; \
++	pushq	$0			; \
++	pushq	$vector			; \
+ 	jmp	isr_save
+ 
+ #define	ERR_ISR(vector)		\
+ 	.globl	__isr_##vector		; \
+ __isr_##vector:				; \
+-	pushl	$vector			; \
++	pushq	$vector			; \
+ 	jmp	isr_save
+ 
+ 	.globl	__isr_table
+@@ -72,56 +71,66 @@ isr_save:
+ **
+ ** At this point, the stack looks like this:
+ **
+-**  esp ->  vector #		saved by the entry macro
++**  rsp ->  vector #		saved by the entry macro
+ **	    error code, or 0	saved by the hardware, or the entry macro
+-**	    saved EIP		saved by the hardware
++**	    saved RIP		saved by the hardware
+ **	    saved CS		saved by the hardware
+ **	    saved EFLAGS	saved by the hardware
+ */
+-	pusha			/* save E*X, ESP, EBP, ESI, EDI */
+-	pushl	%ds		/* save segment registers */
+-	pushl	%es
+-	pushl	%fs
+-	pushl	%gs
+-	pushl	%ss
++	pushq	%rsp
++	pushq	%rbp
++	pushq	%r15
++	pushq	%r14
++	pushq	%r13
++	pushq	%r12
++	pushq	%r11
++	pushq	%r10
++	pushq	%r9
++	pushq	%r8
++	pushq	%rdx
++	pushq	%rcx
++	pushq	%rbx
++	pushq	%rax
++	pushq	%rsi
++	pushq	%rdi
+ 
+ /*
+-** Stack contents (all 32-bit longwords) and offsets from ESP:
++** Stack contents (all 64-bit quads) and offsets from RSP:
+ **
+-**   SS GS FS ES DS EDI ESI EBP ESP EBX EDX ECX EAX vec cod EIP CS EFL
+-**   0  4  8  12 16 20  24  28  32  36  40  44  48  52  56  60  64 68
++**   DS  ES  FS  GS  SS  RDI RSI RAX RBX RCX R8  R9  R10 R11 R12 R13 R14 R15
++**   0   8   16  24  32  40  48  56  64  72  80  88  96  104 112 120 128 136
+ **
+-** Note that the saved ESP is the contents before the PUSHA.
++**   RBP RSP vec cod RIP CS  RFL
++**   144 152 160 168 176 184 192
++**
++** Note that the saved RSP is the contents before the PUSHQ.
+ **
+ ** Set up parameters for the ISR call.
+ */
+-	movl	52(%esp),%eax	/* get vector number and error code */
+-	movl	56(%esp),%ebx
++	movq	160(%rsp), %rdi /* get vector number and error code */
++	movq	168(%rsp), %rsi
+ 
+ /*
+ ** MOD for 20145 CSCI452
+ */
+ 	.globl	_current
+-	.globl	_system_esp
++	.globl	_system_rsp
+ 
+-	movl	_current, %edx	/* save context pointer for the current proc */
+-	movl	%esp, (%edx)	/* (must be the first PCB field) */
++	movq	_current, %rdx	/* save context pointer for the current proc */
++	movq	%rsp, (%rdx)	/* (must be the first PCB field) */
+ 
+-	/* NOTE:  INHERENTLY NON-REENTRANT!!! */
+-	movl	_system_esp, %esp	/* switch to OS stack */
++	// NOTE:  INHERENTLY NON-REENTRANT!!!
++	movq	_system_rsp, %rsp	/* switch to OS stack */
+ 
+ /*
+ ** END MOD for 20145 CSCI452
+ */
+-	pushl	%ebx		/* put them on the top of the stack ... */
+-	pushl	%eax		/* ... as parameters for the ISR */
+ 
+ /*
+ ** Call the ISR
+ */
+-	movl	__isr_table(,%eax,4),%ebx
+-	call	*%ebx
+-	addl	$8,%esp		/* pop the two parameters */
++	movq	__isr_table(,%rdi,4),%rbx
++	call	*%rbx
+ 
+ /*
+ ** Context restore begins here
+@@ -133,8 +142,8 @@ __isr_restore:
+ ** MOD for 20145 CSCI452
+ */
+ 
+-	movl	_current, %ebx	/* return to user stack */
+-	movl	(%ebx), %esp	/* ESP now points to context save area */
++	movq	_current, %rbx	/* return to user stack */
++	movq	(%rbx), %rsp	/* RSP now points to context save area */
+ 
+ /*
+ ** END MOD for 20145 CSCI452
+@@ -167,25 +176,23 @@ __isr_restore:
+ 
+ 	.globl	_system_time
+ 
+-	movl	12(%ebx), %eax	/* PID, PPID */
+-	pushl	%eax
+-	pushl	_system_time	/* and current time */
++	movslq	24(%rbx), %rax	/* PID, PPID */
++	pushq	%rax
++	pushq	_system_time	/* and current time */
+ 
+ /*
+ ** END MOD for 20145 CSCI452
+ */
+ 
+-	pushl	$fmt
+-	pushl	$1
+-	pushl	$0
++	movq	$fmt, %rdi
++	movq	$1, %rsi
++	movq	$0, %rdx
+ 	call	c_printf_at
+ 
+ /*
+ ** MOD for 20145 CSCI452
+ */
+ 
+-	addl	$20,%esp	/* now five things to remove */
+-
+ /*
+ ** END MOD for 20145 CSCI452
+ */
+@@ -198,13 +205,22 @@ __isr_restore:
+ /*
+ ** Restore the context.
+ */
+-	popl	%ss		/* restore the segment registers */
+-	popl	%gs
+-	popl	%fs
+-	popl	%es
+-	popl	%ds
+-	popa			/* restore others */
+-	addl	$8, %esp	/* discard the error code and vector */
++	popq	%rdi
++	popq	%rsi
++	popq	%rax
++	popq	%rbx
++	popq	%rcx
++	popq	%rdx
++	popq	%r8
++	popq	%r9
++	popq	%r10
++	popq	%r11
++	popq	%r12
++	popq	%r13
++	popq	%r14
++	popq	%r15
++	popq	%rbp
++	addq	$24, %rsp	/* discard the error code, vector, and rsp */
+ 	iret			/* and return */
+ 
+ #ifdef ISR_DEBUGGING_CODE
+@@ -305,67 +321,67 @@ ISR(0xfc);	ISR(0xfd);	ISR(0xfe);	ISR(0xff);
+ */
+ 	.globl	__isr_stub_table
+ __isr_stub_table:
+-	.long	__isr_0x00, __isr_0x01, __isr_0x02, __isr_0x03
+-	.long	__isr_0x04, __isr_0x05, __isr_0x06, __isr_0x07
+-	.long	__isr_0x08, __isr_0x09, __isr_0x0a, __isr_0x0b
+-	.long	__isr_0x0c, __isr_0x0d, __isr_0x0e, __isr_0x0f
+-	.long	__isr_0x10, __isr_0x11, __isr_0x12, __isr_0x13
+-	.long	__isr_0x14, __isr_0x15, __isr_0x16, __isr_0x17
+-	.long	__isr_0x18, __isr_0x19, __isr_0x1a, __isr_0x1b
+-	.long	__isr_0x1c, __isr_0x1d, __isr_0x1e, __isr_0x1f
+-	.long	__isr_0x20, __isr_0x21, __isr_0x22, __isr_0x23
+-	.long	__isr_0x24, __isr_0x25, __isr_0x26, __isr_0x27
+-	.long	__isr_0x28, __isr_0x29, __isr_0x2a, __isr_0x2b
+-	.long	__isr_0x2c, __isr_0x2d, __isr_0x2e, __isr_0x2f
+-	.long	__isr_0x30, __isr_0x31, __isr_0x32, __isr_0x33
+-	.long	__isr_0x34, __isr_0x35, __isr_0x36, __isr_0x37
+-	.long	__isr_0x38, __isr_0x39, __isr_0x3a, __isr_0x3b
+-	.long	__isr_0x3c, __isr_0x3d, __isr_0x3e, __isr_0x3f
+-	.long	__isr_0x40, __isr_0x41, __isr_0x42, __isr_0x43
+-	.long	__isr_0x44, __isr_0x45, __isr_0x46, __isr_0x47
+-	.long	__isr_0x48, __isr_0x49, __isr_0x4a, __isr_0x4b
+-	.long	__isr_0x4c, __isr_0x4d, __isr_0x4e, __isr_0x4f
+-	.long	__isr_0x50, __isr_0x51, __isr_0x52, __isr_0x53
+-	.long	__isr_0x54, __isr_0x55, __isr_0x56, __isr_0x57
+-	.long	__isr_0x58, __isr_0x59, __isr_0x5a, __isr_0x5b
+-	.long	__isr_0x5c, __isr_0x5d, __isr_0x5e, __isr_0x5f
+-	.long	__isr_0x60, __isr_0x61, __isr_0x62, __isr_0x63
+-	.long	__isr_0x64, __isr_0x65, __isr_0x66, __isr_0x67
+-	.long	__isr_0x68, __isr_0x69, __isr_0x6a, __isr_0x6b
+-	.long	__isr_0x6c, __isr_0x6d, __isr_0x6e, __isr_0x6f
+-	.long	__isr_0x70, __isr_0x71, __isr_0x72, __isr_0x73
+-	.long	__isr_0x74, __isr_0x75, __isr_0x76, __isr_0x77
+-	.long	__isr_0x78, __isr_0x79, __isr_0x7a, __isr_0x7b
+-	.long	__isr_0x7c, __isr_0x7d, __isr_0x7e, __isr_0x7f
+-	.long	__isr_0x80, __isr_0x81, __isr_0x82, __isr_0x83
+-	.long	__isr_0x84, __isr_0x85, __isr_0x86, __isr_0x87
+-	.long	__isr_0x88, __isr_0x89, __isr_0x8a, __isr_0x8b
+-	.long	__isr_0x8c, __isr_0x8d, __isr_0x8e, __isr_0x8f
+-	.long	__isr_0x90, __isr_0x91, __isr_0x92, __isr_0x93
+-	.long	__isr_0x94, __isr_0x95, __isr_0x96, __isr_0x97
+-	.long	__isr_0x98, __isr_0x99, __isr_0x9a, __isr_0x9b
+-	.long	__isr_0x9c, __isr_0x9d, __isr_0x9e, __isr_0x9f
+-	.long	__isr_0xa0, __isr_0xa1, __isr_0xa2, __isr_0xa3
+-	.long	__isr_0xa4, __isr_0xa5, __isr_0xa6, __isr_0xa7
+-	.long	__isr_0xa8, __isr_0xa9, __isr_0xaa, __isr_0xab
+-	.long	__isr_0xac, __isr_0xad, __isr_0xae, __isr_0xaf
+-	.long	__isr_0xb0, __isr_0xb1, __isr_0xb2, __isr_0xb3
+-	.long	__isr_0xb4, __isr_0xb5, __isr_0xb6, __isr_0xb7
+-	.long	__isr_0xb8, __isr_0xb9, __isr_0xba, __isr_0xbb
+-	.long	__isr_0xbc, __isr_0xbd, __isr_0xbe, __isr_0xbf
+-	.long	__isr_0xc0, __isr_0xc1, __isr_0xc2, __isr_0xc3
+-	.long	__isr_0xc4, __isr_0xc5, __isr_0xc6, __isr_0xc7
+-	.long	__isr_0xc8, __isr_0xc9, __isr_0xca, __isr_0xcb
+-	.long	__isr_0xcc, __isr_0xcd, __isr_0xce, __isr_0xcf
+-	.long	__isr_0xd0, __isr_0xd1, __isr_0xd2, __isr_0xd3
+-	.long	__isr_0xd4, __isr_0xd5, __isr_0xd6, __isr_0xd7
+-	.long	__isr_0xd8, __isr_0xd9, __isr_0xda, __isr_0xdb
+-	.long	__isr_0xdc, __isr_0xdd, __isr_0xde, __isr_0xdf
+-	.long	__isr_0xe0, __isr_0xe1, __isr_0xe2, __isr_0xe3
+-	.long	__isr_0xe4, __isr_0xe5, __isr_0xe6, __isr_0xe7
+-	.long	__isr_0xe8, __isr_0xe9, __isr_0xea, __isr_0xeb
+-	.long	__isr_0xec, __isr_0xed, __isr_0xee, __isr_0xef
+-	.long	__isr_0xf0, __isr_0xf1, __isr_0xf2, __isr_0xf3
+-	.long	__isr_0xf4, __isr_0xf5, __isr_0xf6, __isr_0xf7
+-	.long	__isr_0xf8, __isr_0xf9, __isr_0xfa, __isr_0xfb
+-	.long	__isr_0xfc, __isr_0xfd, __isr_0xfe, __isr_0xff
++	.quad	__isr_0x00, __isr_0x01, __isr_0x02, __isr_0x03
++	.quad	__isr_0x04, __isr_0x05, __isr_0x06, __isr_0x07
++	.quad	__isr_0x08, __isr_0x09, __isr_0x0a, __isr_0x0b
++	.quad	__isr_0x0c, __isr_0x0d, __isr_0x0e, __isr_0x0f
++	.quad	__isr_0x10, __isr_0x11, __isr_0x12, __isr_0x13
++	.quad	__isr_0x14, __isr_0x15, __isr_0x16, __isr_0x17
++	.quad	__isr_0x18, __isr_0x19, __isr_0x1a, __isr_0x1b
++	.quad	__isr_0x1c, __isr_0x1d, __isr_0x1e, __isr_0x1f
++	.quad	__isr_0x20, __isr_0x21, __isr_0x22, __isr_0x23
++	.quad	__isr_0x24, __isr_0x25, __isr_0x26, __isr_0x27
++	.quad	__isr_0x28, __isr_0x29, __isr_0x2a, __isr_0x2b
++	.quad	__isr_0x2c, __isr_0x2d, __isr_0x2e, __isr_0x2f
++	.quad	__isr_0x30, __isr_0x31, __isr_0x32, __isr_0x33
++	.quad	__isr_0x34, __isr_0x35, __isr_0x36, __isr_0x37
++	.quad	__isr_0x38, __isr_0x39, __isr_0x3a, __isr_0x3b
++	.quad	__isr_0x3c, __isr_0x3d, __isr_0x3e, __isr_0x3f
++	.quad	__isr_0x40, __isr_0x41, __isr_0x42, __isr_0x43
++	.quad	__isr_0x44, __isr_0x45, __isr_0x46, __isr_0x47
++	.quad	__isr_0x48, __isr_0x49, __isr_0x4a, __isr_0x4b
++	.quad	__isr_0x4c, __isr_0x4d, __isr_0x4e, __isr_0x4f
++	.quad	__isr_0x50, __isr_0x51, __isr_0x52, __isr_0x53
++	.quad	__isr_0x54, __isr_0x55, __isr_0x56, __isr_0x57
++	.quad	__isr_0x58, __isr_0x59, __isr_0x5a, __isr_0x5b
++	.quad	__isr_0x5c, __isr_0x5d, __isr_0x5e, __isr_0x5f
++	.quad	__isr_0x60, __isr_0x61, __isr_0x62, __isr_0x63
++	.quad	__isr_0x64, __isr_0x65, __isr_0x66, __isr_0x67
++	.quad	__isr_0x68, __isr_0x69, __isr_0x6a, __isr_0x6b
++	.quad	__isr_0x6c, __isr_0x6d, __isr_0x6e, __isr_0x6f
++	.quad	__isr_0x70, __isr_0x71, __isr_0x72, __isr_0x73
++	.quad	__isr_0x74, __isr_0x75, __isr_0x76, __isr_0x77
++	.quad	__isr_0x78, __isr_0x79, __isr_0x7a, __isr_0x7b
++	.quad	__isr_0x7c, __isr_0x7d, __isr_0x7e, __isr_0x7f
++	.quad	__isr_0x80, __isr_0x81, __isr_0x82, __isr_0x83
++	.quad	__isr_0x84, __isr_0x85, __isr_0x86, __isr_0x87
++	.quad	__isr_0x88, __isr_0x89, __isr_0x8a, __isr_0x8b
++	.quad	__isr_0x8c, __isr_0x8d, __isr_0x8e, __isr_0x8f
++	.quad	__isr_0x90, __isr_0x91, __isr_0x92, __isr_0x93
++	.quad	__isr_0x94, __isr_0x95, __isr_0x96, __isr_0x97
++	.quad	__isr_0x98, __isr_0x99, __isr_0x9a, __isr_0x9b
++	.quad	__isr_0x9c, __isr_0x9d, __isr_0x9e, __isr_0x9f
++	.quad	__isr_0xa0, __isr_0xa1, __isr_0xa2, __isr_0xa3
++	.quad	__isr_0xa4, __isr_0xa5, __isr_0xa6, __isr_0xa7
++	.quad	__isr_0xa8, __isr_0xa9, __isr_0xaa, __isr_0xab
++	.quad	__isr_0xac, __isr_0xad, __isr_0xae, __isr_0xaf
++	.quad	__isr_0xb0, __isr_0xb1, __isr_0xb2, __isr_0xb3
++	.quad	__isr_0xb4, __isr_0xb5, __isr_0xb6, __isr_0xb7
++	.quad	__isr_0xb8, __isr_0xb9, __isr_0xba, __isr_0xbb
++	.quad	__isr_0xbc, __isr_0xbd, __isr_0xbe, __isr_0xbf
++	.quad	__isr_0xc0, __isr_0xc1, __isr_0xc2, __isr_0xc3
++	.quad	__isr_0xc4, __isr_0xc5, __isr_0xc6, __isr_0xc7
++	.quad	__isr_0xc8, __isr_0xc9, __isr_0xca, __isr_0xcb
++	.quad	__isr_0xcc, __isr_0xcd, __isr_0xce, __isr_0xcf
++	.quad	__isr_0xd0, __isr_0xd1, __isr_0xd2, __isr_0xd3
++	.quad	__isr_0xd4, __isr_0xd5, __isr_0xd6, __isr_0xd7
++	.quad	__isr_0xd8, __isr_0xd9, __isr_0xda, __isr_0xdb
++	.quad	__isr_0xdc, __isr_0xdd, __isr_0xde, __isr_0xdf
++	.quad	__isr_0xe0, __isr_0xe1, __isr_0xe2, __isr_0xe3
++	.quad	__isr_0xe4, __isr_0xe5, __isr_0xe6, __isr_0xe7
++	.quad	__isr_0xe8, __isr_0xe9, __isr_0xea, __isr_0xeb
++	.quad	__isr_0xec, __isr_0xed, __isr_0xee, __isr_0xef
++	.quad	__isr_0xf0, __isr_0xf1, __isr_0xf2, __isr_0xf3
++	.quad	__isr_0xf4, __isr_0xf5, __isr_0xf6, __isr_0xf7
++	.quad	__isr_0xf8, __isr_0xf9, __isr_0xfa, __isr_0xfb
++	.quad	__isr_0xfc, __isr_0xfd, __isr_0xfe, __isr_0xff
+diff --git a/baseline/klib.h b/baseline/klib.h
+index 6e7f73f..4f560e2 100644
+--- a/baseline/klib.h
++++ b/baseline/klib.h
+@@ -38,12 +38,12 @@
+ */
+ 
+ /*
+-** _get_ebp - return current contents of EBP at the time of the call
++** _get_rbp - return current contents of RBP at the time of the call
+ **
+ ** Could be used, e.g., by _kpanic to print a traceback
+ */
+ 
+-uint32_t _get_ebp( void );
++uint64_t _get_rbp( void );
+ 
+ /*
+ ** _put_char_or_code( ch )
+@@ -60,7 +60,7 @@ void _put_char_or_code( int ch );
+ ** usage:  _memset( buffer, length, value )
+ */
+ 
+-void _memset( register uint8_t *buf, register uint32_t len, register uint8_t value );
++void _memset( register uint8_t *buf, register uint64_t len, register uint8_t value );
+ 
+ /*
+ ** _kpanic - kernel-level panic routine
+diff --git a/baseline/klibc.c b/baseline/klibc.c
+index ab9896b..1ffac0c 100644
+--- a/baseline/klibc.c
++++ b/baseline/klibc.c
+@@ -60,7 +60,7 @@ void _put_char_or_code( int ch ) {
+ ** usage:  _memset( buffer, length, value )
+ */
+ 
+-void _memset( register uint8_t *buf, register uint32_t len, uint8_t value ) {
++void _memset( register uint8_t *buf, register uint64_t len, uint8_t value ) {
+ 
+ 	while( len-- ) {
+ 		*buf++ = value;
+diff --git a/baseline/klibs.S b/baseline/klibs.S
+index 09e0b85..87310f8 100644
+--- a/baseline/klibs.S
++++ b/baseline/klibs.S
+@@ -14,12 +14,12 @@
+ #define	__SP_ASM__
+ 
+ /*
+-** _get_ebp - return current contents of EBP at the time of the call
++** _get_rbp - return current contents of RBP at the time of the call
+ **
+ ** Could be used, e.g., by _kpanic to print a traceback
+ */
+ 
+-	.globl	_get_ebp
+-_get_ebp:
+-	movl	%ebp, %eax
++	.globl	_get_rbp
++_get_rbp:
++	movq	%rbp, %rax
+ 	ret
+diff --git a/baseline/process.c b/baseline/process.c
+index 1e899b5..084c7fd 100644
+--- a/baseline/process.c
++++ b/baseline/process.c
+@@ -37,7 +37,7 @@ static queue_t _free_pcbs;	// queue of available PCBs
+ 
+ pcb_t _pcbs[ N_PCBS ];		// all the PCBs in the system
+ uint16_t _next_pid;		// next available PID
+-uint32_t _system_active;	// # of allocated PCBs
++uint64_t _system_active;	// # of allocated PCBs
+ 
+ /*
+ ** PRIVATE FUNCTIONS
+@@ -159,7 +159,7 @@ pcb_t *_pcb_find( int16_t pid ) {
+ 
+ void _pcb_dump( const char *which, pcb_t *pcb ) {
+ 
+-	c_printf( "%s @%08x: ", which, (uint32_t) pcb );
++	c_printf( "%s @%08x: ", which, (uint64_t) pcb );
+ 	if( pcb == NULL ) {
+ 		c_puts( " NULL???\n" );
+ 		return;
+@@ -189,7 +189,7 @@ void _pcb_dump( const char *which, pcb_t *pcb ) {
+ 		  pcb->default_quantum, pcb->wakeup );
+ 
+ 	c_printf( " context %08x stack %08x\n",
+-		  (uint32_t) pcb->context, (uint32_t) pcb->stack );
++		  (uint64_t) pcb->context, (uint64_t) pcb->stack );
+ }
+ 
+ /*
+@@ -200,21 +200,20 @@ void _pcb_dump( const char *which, pcb_t *pcb ) {
+ 
+ void _context_dump( const char *which, context_t *context ) {
+ 
+-	c_printf( "%s @%08x: ", which, (uint32_t) context );
++	c_printf( "%s @%08x: ", which, (uint64_t) context );
+ 	if( context == NULL ) {
+ 		c_puts( " NULL???\n" );
+ 		return;
+ 	}
+ 
+-	c_printf( "\n\t ss %08x  gs %08x  fs %08x  es %08x\n",
+-		context->ss, context->gs, context->fs, context->es );
+-	c_printf( "\t ds %08x edi %08x esi %08x ebp %08x\n",
+-		context->ds, context->edi, context->esi, context->ebp );
+-	c_printf( "\tesp %08x ebx %08x edx %08x ecx %08x\n",
+-		context->esp, context->ebx, context->edx, context->ecx );
+-	c_printf( "\teax %08x vec %08x cod %08x eip %08x\n",
+-		context->eax, context->vector, context->code, context->eip );
+-	c_printf( "\t cs %08x efl %08x\n",
+-		context->cs, context->eflags );
+-
++	c_printf( "\trsp %08x rbp %08x rdi %08x rsi %08x\n",
++		context->rsp, context->rbp, context->rdi, context->rsi );
++	c_printf( "\trdx %08x rcx %08x  r8 %08x  r9 %08x\n",
++		context->rdx, context->rcx, context->r8, context->r9 );
++	c_printf( "\trax %08x rbx %08x r10 %08x r11 %08x\n",
++		context->rax, context->rbx, context->r10, context->r11 );
++	c_printf( "\tr12 %08x r13 %08x r14 %08x r15 %08x\n",
++		context->r12, context->r13, context->r14, context->r15 );
++	c_printf( "\trip %08x rfl %08x vec %08x cod %08x\n",
++		context->rip, context->rflags, context->vector, context->code );
+ }
+diff --git a/baseline/process.h b/baseline/process.h
+index 936c167..0f90d12 100644
+--- a/baseline/process.h
++++ b/baseline/process.h
+@@ -66,11 +66,11 @@
+ //
+ // IF THE PARAMETER PASSING MECHANISM CHANGES, SO MUST THIS
+ 
+-#define	ARG(n,c)	( ((uint32_t *)((c) + 1)) [(n)] )
++#define	ARG(n,c)	( ((uint64_t *)((c) + 1)) [(n)] )
+ 
+ // RET(c) - access return value register in process context
+ 
+-#define RET(c)  ((c)->eax)
++#define RET(c)  ((c)->rax)
+ 
+ /*
+ ** Types
+@@ -82,24 +82,27 @@
+ // register save code in isr_stubs.S!!!!
+ 
+ typedef struct context {
+-	uint32_t ss;
+-	uint32_t gs;
+-	uint32_t fs;
+-	uint32_t es;
+-	uint32_t ds;
+-	uint32_t edi;
+-	uint32_t esi;
+-	uint32_t ebp;
+-	uint32_t esp;
+-	uint32_t ebx;
+-	uint32_t edx;
+-	uint32_t ecx;
+-	uint32_t eax;
+-	uint32_t vector;
+-	uint32_t code;
+-	uint32_t eip;
+-	uint32_t cs;
+-	uint32_t eflags;
++	uint64_t rdi;
++	uint64_t rsi;
++	uint64_t rax;
++	uint64_t rbx;
++	uint64_t rcx;
++	uint64_t rdx;
++	uint64_t r8;
++	uint64_t r9;
++	uint64_t r10;
++	uint64_t r11;
++	uint64_t r12;
++	uint64_t r13;
++	uint64_t r14;
++	uint64_t r15;
++	uint64_t rbp;
++	uint64_t rsp;
++	uint64_t vector;
++	uint64_t code;
++	void    *rip;
++	uint64_t cs;
++	uint64_t rflags;
+ } context_t;
+ 
+ // process control block
+@@ -107,10 +110,10 @@ typedef struct context {
+ // members are ordered by size
+ 
+ typedef struct pcb {
+-	// 32-bit fields
++	// 64-bit fields
+ 	context_t	*context;	// context save area pointer
+ 	stack_t		*stack;		// per-process runtime stack
+-	uint32_t	wakeup;		// for sleeping processes
++	uint64_t	wakeup;		// for sleeping processes
+ 
+ 	// 16-bit fields
+ 	int16_t		pid;		// our pid
+@@ -129,7 +132,7 @@ typedef struct pcb {
+ 
+ extern pcb_t _pcbs[];		// all PCBs in the system
+ extern uint16_t _next_pid;	// next available PID
+-extern uint32_t _system_active;	// # of allocated PCBs
++extern uint64_t _system_active;	// # of allocated PCBs
+ 
+ /*
+ ** Prototypes
+diff --git a/baseline/queue.c b/baseline/queue.c
+index ec654e5..c27dedd 100644
+--- a/baseline/queue.c
++++ b/baseline/queue.c
+@@ -50,7 +50,7 @@ struct queue {
+ 	qnode_t *first;		// head pointer
+ 	qnode_t *last;		// tail pointer
+ 	comparef_t compare;	// comparison function
+-	uint32_t size;		// queue length
++	uint64_t size;		// queue length
+ };
+ 
+ /*
+@@ -78,8 +78,8 @@ static struct queue _queues[N_QUEUES];	// all available queues
+ */
+ 
+ int _compare_time( void *qn1, void *qn2 ) {
+-	uint32_t k1 = (uint32_t) qn1;
+-	uint32_t k2 = (uint32_t) qn2;
++	uint64_t k1 = (uint64_t) qn1;
++	uint64_t k2 = (uint64_t) qn2;
+ 
+ 	return( k1 - k2 );
+ }
+@@ -348,7 +348,7 @@ bool_t _queue_empty( queue_t queue ) {
+ ** return the number of elements in the supplied queue
+ */
+ 
+-uint32_t _queue_size( queue_t queue ) {
++uint64_t _queue_size( queue_t queue ) {
+ 	return( queue->size );
+ }
+ 
+@@ -415,15 +415,15 @@ void _queue_dump( char *which, queue_t queue ) {
+ 	}
+ 
+ 	c_printf( "first %08x last %08x comp %08x (%d items)\n",
+-		  (uint32_t) queue->first, (uint32_t) queue->last,
+-		  (uint32_t) queue->compare, queue->size );
++		  (uint64_t) queue->first, (uint64_t) queue->last,
++		  (uint64_t) queue->compare, queue->size );
+ 
+ 	if( _queue_size(queue) > 0 ) {
+ 		c_puts( " data: " );
+ 		i = 0;
+ 		for( tmp = queue->first; tmp != NULL; tmp = tmp->next ) {
+-			c_printf( " [%x,%x]", (uint32_t) tmp->key,
+-				(uint32_t) tmp->data );
++			c_printf( " [%x,%x]", (uint64_t) tmp->key,
++				(uint64_t) tmp->data );
+ 			if( ++i > 10 ) break;
+ 		}
+ 		if( tmp != NULL ) {
+diff --git a/baseline/queue.h b/baseline/queue.h
+index 63b1a70..afe91d5 100644
+--- a/baseline/queue.h
++++ b/baseline/queue.h
+@@ -151,7 +151,7 @@ bool_t _queue_empty( queue_t queue );
+ ** return the number of elements in the specified queue
+ */
+ 
+-uint32_t _queue_size( queue_t queue );
++uint64_t _queue_size( queue_t queue );
+ 
+ /*
+ ** _queue_dump(which,queue)
+diff --git a/baseline/sio.c b/baseline/sio.c
+index 2984e9e..2134f67 100644
+--- a/baseline/sio.c
++++ b/baseline/sio.c
+@@ -81,13 +81,13 @@
+ static char _inbuffer[ BUF_SIZE ];
+ static char *_inlast;
+ static char *_innext;
+-static uint32_t _incount;
++static uint64_t _incount;
+ 
+ 	// output character buffer
+ static char _outbuffer[ BUF_SIZE ];
+ static char *_outlast;
+ static char *_outnext;
+-static uint32_t _outcount;
++static uint64_t _outcount;
+ 
+ 	// output control flag
+ static int _sending;
+diff --git a/baseline/stack.c b/baseline/stack.c
+index 3df3ab9..cba34f1 100644
+--- a/baseline/stack.c
++++ b/baseline/stack.c
+@@ -37,7 +37,7 @@ static stack_t _stacks[ N_STACKS ];	// all the stacks in the system
+ */
+ 
+ stack_t _system_stack;		// separate stack for the OS itself
+-uint32_t *_system_esp;		// OS %ESP value
++uint64_t *_system_rsp;		// OS %ESP value
+ 
+ /*
+ ** PRIVATE FUNCTIONS
+diff --git a/baseline/stack.h b/baseline/stack.h
+index 15e5462..6a5d887 100644
+--- a/baseline/stack.h
++++ b/baseline/stack.h
+@@ -27,7 +27,7 @@
+ 
+ // size of each stack (in longwords)
+ 
+-#define	STACK_LWORDS	1024
++#define	STACK_QUADS	1024
+ 
+ // number of stacks to create includes one for the idle process
+ 
+@@ -39,14 +39,14 @@
+ 
+ // stack structure
+ 
+-typedef uint32_t stack_t[STACK_LWORDS];
++typedef uint64_t stack_t[STACK_QUADS];
+ 
+ /*
+ ** Globals
+ */
+ 
+ extern stack_t _system_stack;		// separate stack for the OS itself
+-extern uint32_t *_system_esp;		// OS %ESP value
++extern uint64_t *_system_rsp;		// OS %RSP value
+ 
+ /*
+ ** Prototypes
+diff --git a/baseline/startup.S b/baseline/startup.S
+index 73a3d0e..1690141 100644
+--- a/baseline/startup.S
++++ b/baseline/startup.S
+@@ -16,7 +16,6 @@
+ **
+ ** This code is intended to be assembled with as, not as86.
+ */
+-	.arch	i386
+ 
+ #include "bootstrap.h"
+ 
+@@ -49,7 +48,7 @@ _start:
+ ** Set the data and stack segment registers (code segment register
+ ** was set by the long jump that switched us into protected mode).
+ */
+-	xorl	%eax, %eax	/* clear EAX */
++	xorq	%rax, %rax	/* clear EAX */
+ 	movw	$GDT_DATA, %ax	/* GDT entry #3 - data segment */
+ 	movw	%ax, %ds	/* for all four data segment registers */
+ 	movw	%ax, %es
+@@ -59,8 +58,8 @@ _start:
+ 	movw	$GDT_STACK, %ax	/* entry #4 is the stack segment */
+ 	movw	%ax, %ss
+ 
+-	movl	$TARGET_STACK, %ebp	/* set up the system frame pointer */
+-	movl	%ebp, %esp		/* and stack pointer */
++	movq	$TARGET_STACK, %rbp	/* set up the system frame pointer */
++	movq	%rbp, %rsp	/* and stack pointer */
+ 
+ #ifdef CLEAR_BSS_SEGMENT
+ 
+@@ -69,13 +68,13 @@ _start:
+ **
+ ** These symbols are defined automatically by the linker.
+ */
+-	.globl	__bss_start,_end
++	.globl	__bss_start, _end
+ 
+-	movl	$__bss_start,%edi
++	movq	$__bss_start, %rdi
+ clearbss:
+-	movl	$0,(%edi)
+-	addl	$4,%edi
+-	cmpl	$_end,%edi
++	movq	$0,(%rdi)
++	addq	$4,%rdi
++	cmpq	$_end,%rdi
+ 	jb	clearbss
+ 
+ #endif
+@@ -118,14 +117,13 @@ clearbss:
+ /*
+ ** Returned from the main function!  Stop execution.
+ */
+-	cli			/* Disable interrupts */
+-	pushl	$message	/* Print the message saying that */
+-	pushl	$24		/*   the main function returned. */
+-	movl	$80,%eax	/*   This goes to the lower right */
+-	subl	$messagelen,%eax /*  corner of the screen. */
+-	pushl	%eax
++	cli				/* Disable interrupts. */
++	movq	$message, %rdi		/* Print the message saying that */
++	movq	$24, %rsi		/* the main function returned. */
++	movq	$80, %rdx		/* This goes to the lower right */
++	subq	$messagelen, %rdx	/* corner of the screen. */
+ 	call	c_puts_at
+-die:	hlt			/* Stop. */
++die:	hlt				/* Stop. */
+ 	jmp	die
+ 
+ message: .string "     ***** Returned from main! *****     "
+@@ -136,8 +134,6 @@ messagelen = . - message - 1
+ /*
+ ** Support routines needed for boot up and the console.
+ */
+-ARG1	= 8			/* Offset to 1st argument */
+-ARG2	= 12			/* Offset to 2nd argument */
+ 
+ /*
+ ** Name:	__inb, __inw, __inl
+@@ -151,25 +147,18 @@ ARG2	= 12			/* Offset to 2nd argument */
+ 	.globl	__inb, __inw, __inl
+ 
+ __inb:
+-	enter	$0,$0
+-	xorl	%eax,%eax	/* Clear the high order bytes of %eax */
+-	movl	ARG1(%ebp),%edx	/* Move port number to %edx */
+-	inb	(%dx)		/* Get a byte from the port into %al (low */
+-	leave			/*   byte of %eax) */
++	movl	%edi, %edx	/* Move port number to %edx */
++	inb	(%dx)		/* Get a byte from the port into %al */
++	movsbl	%al, %eax
+ 	ret
+ __inw:
+-	enter	$0,$0
+-	xorl	%eax,%eax	/* Clear the high order bytes of %eax */
+-	movl	ARG1(%ebp),%edx	/* Move port number to %edx */
+-	inw	(%dx)		/* Get a word from the port into %ax (low */
+-	leave			/*   word of %eax) */
++	movl	%edi, %edx	/* Move port number to %edx */
++	inw	(%dx)		/* Get a byte from the port into %ax */
++	movswl	%ax, %eax
+ 	ret
+ __inl:
+-	enter	$0,$0
+-	xorl	%eax,%eax	/* Clear the high order bytes of %eax */
+-	movl	ARG1(%ebp),%edx	/* Move port number to %edx */
+-	inl	(%dx)		/* Get a longword from the port into %eax */
+-	leave
++	movl	%edi, %edx	/* Move port number to %edx */
++	inl	(%dx)		/* Get a byte from the port into %eax */
+ 	ret
+ 
+ /*
+@@ -182,25 +171,19 @@ __inl:
+ */
+ 	.globl	__outb, __outw, __outl
+ __outb:
+-	enter	$0,$0
+-	movl	ARG1(%ebp),%edx	/* Get the port number into %edx, */
+-	movl	ARG2(%ebp),%eax	/*   and the value into %eax */
+-	outb	(%dx)		/* Output that byte to the port */
+-	leave			/*   (only %al is sent) */
++	movl	%edi, %edx	/* Move port number to %edx */
++	movl	%esi, %eax	/* Move value to %eax */
++	outb	(%dx)		/* Send value into the port */
+ 	ret
+ __outw:
+-	enter	$0,$0
+-	movl	ARG1(%ebp),%edx	/* Get the port number into %edx, */
+-	movl	ARG2(%ebp),%eax	/*   and the value into %eax */
+-	outw	(%dx)		/* Output that word to the port. */
+-	leave			/*   (only %ax is sent) */
++	movl	%edi, %edx	/* Move port number to %edx */
++	movl	%esi, %eax	/* Move value to %eax */
++	outw	(%dx)		/* Send value into the port */
+ 	ret
+ __outl:
+-	enter	$0,$0
+-	movl	ARG1(%ebp),%edx	/* Get the port number into %edx, */
+-	movl	ARG2(%ebp),%eax	/*   and the value into %eax */
+-	outl	(%dx)		/* Output that longword to the port. */
+-	leave
++	movl	%edi, %edx	/* Move port number to %edx */
++	movl	%esi, %eax	/* Move value to %eax */
++	outl	(%dx)		/* Send value into the port */
+ 	ret
+ 
+ /*
+@@ -210,8 +193,8 @@ __outl:
+ 	.globl	__get_flags
+ 
+ __get_flags:
+-	pushfl			/* Push flags on the stack, */
+-	popl	%eax		/*   and pop them into eax. */
++	pushfq			/* Push flags on the stack, */
++	popq	%rax		/*   and pop them into eax. */
+ 	ret
+ 
+ /*
+diff --git a/baseline/support.c b/baseline/support.c
+index e05ac00..8f2e055 100644
+--- a/baseline/support.c
++++ b/baseline/support.c
+@@ -41,6 +41,8 @@ typedef struct	{
+ 	short	segment_selector;
+ 	short	flags;
+ 	short	offset_31_16;
++	short	offset_63_32;
++	short	reserved;
+ } IDT_Gate;
+ 
+ /*
+@@ -93,6 +95,24 @@ static void __default_expected_handler( int vector, int code ){
+ }
+ 
+ /*
++** Name:	__default_pagefault_handler
++**
++** Arguments:	The usual ISR arguments
++**
++** Returns:	The usual ISR return value
++**
++** Description: Default handler for a page fault through vector 0x0e; displays
++**		a more helpful message than the default.
++*/
++static void __default_pagefault_handler( int vector, int code ){
++	(void)(vector);
++	(void)(code);
++
++	__panic( "Unexpected page fault" );
++}
++
++
++/*
+ ** Name:	__default_mystery_handler
+ **
+ ** Arguments:	The usual ISR arguments
+@@ -169,6 +189,7 @@ static void set_idt_entry( int entry, void ( *handler )( void ) ){
+ 	g->segment_selector = 0x0010;
+ 	g->flags = (unsigned short)(IDT_PRESENT | IDT_DPL_0 | IDT_INT32_GATE);
+ 	g->offset_31_16 = (int)(unsigned long)handler >> 16 & 0xffff;
++	g->offset_63_32 = (int)(unsigned long)handler & (0x00000000ffffffff);
+ }
+ 
+ 
+@@ -197,9 +218,10 @@ static void init_idt( void ){
+ 	/*
+ 	** Install the handlers for interrupts that have a specific handler.
+ 	*/
+-	__install_isr( INT_VEC_KEYBOARD, __default_expected_handler );
+-	__install_isr( INT_VEC_TIMER,    __default_expected_handler );
+-	__install_isr( INT_VEC_MYSTERY,  __default_mystery_handler );
++	__install_isr( INT_VEC_KEYBOARD,   __default_expected_handler );
++	__install_isr( INT_VEC_TIMER,      __default_expected_handler );
++	__install_isr( INT_VEC_MYSTERY,    __default_mystery_handler );
++	__install_isr( INT_VEC_PAGE_FAULT, __default_pagefault_handler );
+ }
+ 
+ /*
+diff --git a/baseline/syscall.c b/baseline/syscall.c
+index 5dca534..08d55a4 100644
+--- a/baseline/syscall.c
++++ b/baseline/syscall.c
+@@ -71,7 +71,7 @@ static void _sys_isr( int vector, int code ) {
+ 	(void)(vector);
+ 	(void)(code);
+ 
+-	uint32_t which= _current->context->eax;
++	uint64_t which= _current->context->rax;
+ 
+ 	// verify that we were given a legal code
+ 
+@@ -145,8 +145,8 @@ static void _sys_spawnp( pcb_t *pcb ) {
+ 
+ 	// farm out all the work to this supporting routine
+ 
+-	new = _create_process( (uint32_t) ARG(1,pcb->context),
+-				(uint32_t) ARG(2,pcb->context) );
++	new = _create_process( (void*) ARG(1,pcb->context),
++				(uint64_t) ARG(2,pcb->context) );
+ 
+ 	if( new == NULL ) {
+ 
+@@ -181,7 +181,7 @@ static void _sys_spawnp( pcb_t *pcb ) {
+ */
+ 
+ static void _sys_sleep( pcb_t *pcb ) {
+-	uint32_t sleeptime = (uint32_t) ARG(1,pcb->context);
++	uint64_t sleeptime = (uint64_t) ARG(1,pcb->context);
+ 
+ 	// if the desired sleep time is 0, treat this as a yield()
+ 
+diff --git a/baseline/system.c b/baseline/system.c
+index 2a7bc00..f2dc83e 100644
+--- a/baseline/system.c
++++ b/baseline/system.c
+@@ -64,9 +64,9 @@
+ **      pointer to the new PCB
+ */
+ 
+-pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
++pcb_t *_create_process( void *entry, uint8_t prio ) {
+ 	pcb_t *new;
+-	uint32_t *ptr;
++	uint64_t *ptr;
+ 
+ 	// allocate the new structures
+ 
+@@ -100,7 +100,7 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
+ 
+ 	// first, create a pointer to the longword after the stack
+ 
+-	ptr = (uint32_t *) (new->stack + 1);
++	ptr = (uint64_t *) (new->stack + 1);
+ 
+ 	// save the buffering 0 at the end
+ 
+@@ -110,7 +110,7 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
+ 	// without calling exit(), we return "into" a function which
+ 	// calls exit()
+ 
+-	*--ptr = (uint32_t) __default_exit__;
++	*--ptr = (uint64_t) __default_exit__;
+ 
+ 	// locate the context save area
+ 
+@@ -118,14 +118,8 @@ pcb_t *_create_process( uint32_t entry, uint8_t prio ) {
+ 
+ 	// fill in the non-zero entries in the context save area
+ 
+-	new->context->eip    = entry;
+-	new->context->cs     = GDT_CODE;
+-	new->context->ss     = GDT_STACK;
+-	new->context->ds     = GDT_DATA;
+-	new->context->es     = GDT_DATA;
+-	new->context->fs     = GDT_DATA;
+-	new->context->gs     = GDT_DATA;
+-	new->context->eflags = DEFAULT_EFLAGS;
++	new->context->rip    = entry;
++	new->context->rflags = DEFAULT_RFLAGS;
+ 
+ 	// fill in the remaining important fields
+ 
+@@ -205,7 +199,7 @@ void _init( void ) {
+ 	** longword in the system stack.
+ 	*/
+ 
+-	_system_esp = ((uint32_t *) ( (&_system_stack) + 1)) - 2;
++	_system_rsp = ((uint64_t *) ( (&_system_stack) + 1)) - 2;
+ 
+ 	/*
+ 	** Create the initial process
+@@ -214,7 +208,7 @@ void _init( void ) {
+ 	** changes, SO MUST THIS!!!
+ 	*/
+ 
+-	pcb = _create_process( (uint32_t) init, PRIO_SYSTEM );
++	pcb = _create_process( (void*)(unsigned long)init, PRIO_SYSTEM );
+ 	if( pcb == NULL ) {
+ 		_kpanic( "_init", "init() creation failed" );
+ 	}
+@@ -228,7 +222,7 @@ void _init( void ) {
+ 	** Next, create the idle process
+ 	*/
+ 
+-	pcb = _create_process( (uint32_t) idle, PRIO_USER_LOW );
++	pcb = _create_process( (void*)(unsigned long)idle, PRIO_USER_LOW );
+ 	if( pcb == NULL ) {
+ 		_kpanic( "_init", "idle() creation failed" );
+ 	}
+diff --git a/baseline/system.h b/baseline/system.h
+index e0d7b44..40f943a 100644
+--- a/baseline/system.h
++++ b/baseline/system.h
+@@ -27,9 +27,9 @@
+ ** Start of C-only definitions
+ */
+ 
+-// default contents of EFLAGS register
++// default contents of RFLAGS register
+ 
+-#define	DEFAULT_EFLAGS	(EFLAGS_MB1 | EFLAGS_IF)
++#define	DEFAULT_RFLAGS	(RFLAGS_MB1 | RFLAGS_IF)
+ 
+ /*
+ ** Types
+@@ -52,7 +52,7 @@
+ **      pointer to the new PCB
+ */
+ 
+-pcb_t *_create_process( uint32_t entry, uint8_t prio );
++pcb_t *_create_process( void *entry, uint8_t prio );
+ 
+ /*
+ ** _init - system initialization routine
+diff --git a/baseline/types.h b/baseline/types.h
+index eb446dc..ac6f355 100644
+--- a/baseline/types.h
++++ b/baseline/types.h
+@@ -42,6 +42,9 @@ typedef uint16_t	ushort_t;
+ typedef long		int32_t;
+ typedef unsigned long	uint32_t;
+ 
++typedef long long		int64_t;
++typedef unsigned long long	uint64_t;
++
+ typedef _Bool		bool_t;
+ 
+ #ifdef __SP_KERNEL__
+diff --git a/baseline/ulib.h b/baseline/ulib.h
+index 87d9267..b0bf9a8 100644
+--- a/baseline/ulib.h
++++ b/baseline/ulib.h
+@@ -86,7 +86,7 @@ void exit( void );
+ **	pid of the spawned process, or -1 on failure
+ */
+ 
+-int32_t spawn( void (*entry)(void) );
++int64_t spawn( void (*entry)(void) );
+ 
+ /*
+ ** spawnp - create a new process running a different program
+@@ -97,7 +97,7 @@ int32_t spawn( void (*entry)(void) );
+ **	pid of the spawned process, or -1 on failure
+ */
+ 
+-int32_t spawnp( void (*entry)(void), uint8_t prio );
++int64_t spawnp( void (*entry)(void), uint8_t prio );
+ 
+ /*
+ ** sleep - put the current process to sleep for some length of time
+@@ -109,7 +109,7 @@ int32_t spawnp( void (*entry)(void), uint8_t prio );
+ ** time
+ */
+ 
+-void sleep( uint32_t ms );
++void sleep( uint64_t ms );
+ 
+ /*
+ ** read - read from the console or SIO
+@@ -148,7 +148,7 @@ int write( int fd, char *buf, int size );
+ ** if 'who' is 0, retrieves information about the calling process
+ */
+ 
+-int32_t get_process_info( uint32_t what, uint16_t who );
++int64_t get_process_info( uint64_t what, uint16_t who );
+ 
+ /*
+ ** get_system_info - retrieve information about the system
+@@ -159,7 +159,7 @@ int32_t get_process_info( uint32_t what, uint16_t who );
+ **      the desired value, or -1 on error
+ */
+ 
+-int32_t get_system_info( uint32_t what );
++int64_t get_system_info( uint64_t what );
+ 
+ /*
+ ** bogus - a bogus system call, for testing our syscall ISR
+diff --git a/baseline/ulibc.c b/baseline/ulibc.c
+index b2066d5..d48c298 100644
+--- a/baseline/ulibc.c
++++ b/baseline/ulibc.c
+@@ -55,7 +55,7 @@ void __default_exit__( void ) {
+ ** invoke spawnp() with the priority of the calling process
+ */
+ 
+-int32_t spawn( void (*entry)(void) ) {
++int64_t spawn( void (*entry)(void) ) {
+ 	return( spawnp(entry,get_process_info(INFO_PRIO,0)) );
+ }
+ 

@@ -1,0 +1,41 @@
+diff --git a/baseline/Makefile b/baseline/Makefile
+index 2c312aa..8d11f5b 100644
+--- a/baseline/Makefile
++++ b/baseline/Makefile
+@@ -124,16 +124,16 @@ SOURCES = $(BOOT_SRC) $(S_SRC) $(C_SRC)
+ #
+ 
+ usb.image: bootstrap.b prog.b prog.nl prog.nlf BuildImage
+-	./BuildImage -o usb.image -b bootstrap.b prog.b 0x10000
++	./BuildImage -o usb.image -b bootstrap.b prog.b 0x100000
+ 
+ prog.out: $(OBJECTS)
+ 	$(LD) $(LDFLAGS) -o prog.out $(OBJECTS)
+ 
+ prog.o:	$(OBJECTS)
+-	$(LD) $(LDFLAGS) -o prog.o -Ttext 0x10000 $(OBJECTS) $(U_LIBS)
++	$(LD) $(LDFLAGS) -o prog.o -Ttext 0x100000 $(OBJECTS) $(U_LIBS)
+ 
+ prog.b:	prog.o
+-	$(LD) $(LDFLAGS) -o prog.b -s --oformat binary -Ttext 0x10000 prog.o
++	$(LD) $(LDFLAGS) -o prog.b -s --oformat binary -Ttext 0x100000 prog.o
+ 
+ #
+ # Targets for copying bootable image onto boot devices
+diff --git a/baseline/bootstrap.h b/baseline/bootstrap.h
+index 3c18ec1..b0088f6 100644
+--- a/baseline/bootstrap.h
++++ b/baseline/bootstrap.h
+@@ -16,9 +16,9 @@
+ /*
+ ** The target program itself
+ */
+-#define	TARGET_SEGMENT	0x00001000	/* 0001:0000 */
+-#define	TARGET_ADDRESS	0x00010000	/* and upward */
+-#define	TARGET_STACK	0x00010000	/* and downward */
++#define	TARGET_SEGMENT	0x00010000	/* 0001:0000 */
++#define	TARGET_ADDRESS	0x00100000	/* and upward */
++#define	TARGET_STACK	0x00080000	/* and downward */
+ 
+ /*
+ ** The Global Descriptor Table (0000:0500 - 0000:2500)
