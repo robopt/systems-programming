@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Queue","A fixed-size, FIFO/LILO array (queue)."]]});

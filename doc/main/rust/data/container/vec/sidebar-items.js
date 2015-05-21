@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Vec","A fixed-size, FILO/LIFO array (stack). Uses x86 convention of inserting to the positive side of the array first."]]});
